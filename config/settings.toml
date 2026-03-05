@@ -1,0 +1,40 @@
+[agent]
+model = "claude-opus-4-6"
+max_turns = 30
+max_budget_usd = 2.0
+
+[scheduler]
+# How often (in minutes) the agent runs its maintenance scan
+interval_minutes = 60
+# Run immediately on startup before first scheduled interval
+run_on_startup = true
+
+[scanner]
+# File extensions to include in analysis
+include_extensions = [".py", ".ts", ".js", ".md", ".yaml", ".yml", ".toml", ".json"]
+# Directories to always skip
+exclude_dirs = [".git", "__pycache__", "node_modules", ".venv", "venv", "dist", "build", ".next"]
+# Max file size to read (in KB)
+max_file_size_kb = 500
+
+[prioritizer]
+# Tasks with impact >= this threshold are executed autonomously
+auto_execute_min_impact = 3
+# Tasks with risk >= this threshold require human review
+human_review_min_risk = 8
+# Max tasks to execute per maintenance cycle
+max_tasks_per_cycle = 5
+
+[git]
+# Whether to auto-commit changes made by the agent
+auto_commit = true
+# Branch prefix for agent-created fix branches
+branch_prefix = "agent/maintenance"
+# Commit author
+author_name = "Autonomous Maintenance Agent"
+author_email = "agent@maintenance.bot"
+
+[logging]
+level = "INFO"
+log_file = "logs/agent.log"
+audit_file = "logs/audit.log"
