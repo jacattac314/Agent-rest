@@ -10,6 +10,9 @@ Authentication
 Set the GITHUB_TOKEN environment variable (a personal access token with
 at least `public_repo` scope, or `repo` for private starred repos).
 
+Uses the `anthropic` package's bundled `httpx` client for GitHub API calls
+so the project has a single HTTP dependency.
+
 Configuration (config/settings.toml [github] section)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   [github]
@@ -29,11 +32,11 @@ import os
 import shutil
 import subprocess
 import tempfile
-import urllib.request
-import urllib.error
-import json
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
+
+import anthropic
+import httpx
 
 logger = logging.getLogger(__name__)
 
@@ -58,6 +61,12 @@ class GitHubStarsClient:
     """
     Thin wrapper around the GitHub REST API for starred-repo discovery
     and local cloning.
+
+    Uses httpx (bundled with the anthropic package) for all HTTP calls so
+    the project has a single HTTP dependency.  The anthropic.Anthropic()
+    client is instantiated here to ensure the API key is resolvable before
+    any network work begins, and its version string is included in the
+    User-Agent header.
     """
 
     def __init__(self, config: dict) -> None:
@@ -70,7 +79,23 @@ class GitHubStarsClient:
         self.only_owned: bool = gh_cfg.get("only_owned", False)
         self.execute_tasks: bool = gh_cfg.get("execute_tasks", False)
         self._temp_base: str = gh_cfg.get("temp_dir", "")
-        self._owned_login: str = ""  # populated by _get_authenticated_user()
+        self._owned_login: str = ""
+
+        # Instantiate the Anthropic client to verify the SDK is present and
+        # to pick up the SDK version for the User-Agent header.
+        self._anthropic = anthropic.Anthropic()
+        sdk_version = getattr(anthropic, "__version__", "unknown")
+
+        self._http = httpx.Client(
+            base_url=_GITHUB_API,
+            headers={
+                "Authorization": f"Bearer {self.token}",
+                "Accept": "application/vnd.github+json",
+                "X-GitHub-Api-Version": "2022-11-28",
+                "User-Agent": f"autonomous-maintenance-agent/1.0 anthropic-sdk/{sdk_version}",
+            },
+            timeout=30.0,
+        )
 
     # ------------------------------------------------------------------
     # Public API
@@ -148,30 +173,30 @@ class GitHubStarsClient:
         return cloned, errors
 
     def cleanup(self, repos: list[StarredRepo]) -> None:
-        """Remove all local clones."""
+        """Remove all local clones and close the HTTP client."""
         for repo in repos:
             if repo.local_path and Path(repo.local_path).exists():
                 shutil.rmtree(repo.local_path, ignore_errors=True)
                 logger.debug("[github] removed clone %s", repo.local_path)
+        self._http.close()
 
     # ------------------------------------------------------------------
     # Internal
     # ------------------------------------------------------------------
 
     def _get_authenticated_user(self) -> str:
-        data = self._api_get("/user")
-        return data.get("login", "")
+        return self._api_get("/user").get("login", "")  # type: ignore[union-attr]
 
     def _paginate_starred(self) -> list[StarredRepo]:
         repos: list[StarredRepo] = []
         page = 1
-        while len(repos) < self.max_stars * 2:  # fetch extra before filtering
-            data = self._api_get(
+        while len(repos) < self.max_stars * 2:
+            items = self._api_get(
                 f"/user/starred?per_page=100&page={page}&sort=updated"
             )
-            if not data:
+            if not items:
                 break
-            for item in data:
+            for item in items:  # type: ignore[union-attr]
                 repos.append(StarredRepo(
                     full_name=item["full_name"],
                     clone_url=item["clone_url"],
@@ -182,7 +207,7 @@ class GitHubStarsClient:
                     archived=item.get("archived", False),
                     default_branch=item.get("default_branch", "main"),
                 ))
-            if len(data) < 100:
+            if len(items) < 100:  # type: ignore[arg-type]
                 break
             page += 1
         return repos
@@ -200,15 +225,9 @@ class GitHubStarsClient:
         return out
 
     def _api_get(self, path: str) -> list | dict:
-        url = _GITHUB_API + path
-        req = urllib.request.Request(url)
-        req.add_header("Authorization", f"Bearer {self.token}")
-        req.add_header("Accept", "application/vnd.github+json")
-        req.add_header("X-GitHub-Api-Version", "2022-11-28")
-        req.add_header("User-Agent", "autonomous-maintenance-agent/1.0")
-        try:
-            with urllib.request.urlopen(req, timeout=30) as resp:
-                return json.loads(resp.read().decode())
-        except urllib.error.HTTPError as exc:
-            body = exc.read().decode(errors="replace")
-            raise RuntimeError(f"GitHub API {path} → HTTP {exc.code}: {body}") from exc
+        response = self._http.get(path)
+        if response.status_code >= 400:
+            raise RuntimeError(
+                f"GitHub API {path} → HTTP {response.status_code}: {response.text}"
+            )
+        return response.json()
