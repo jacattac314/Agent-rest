@@ -38,3 +38,9 @@ author_email = "agent@maintenance.bot"
 level = "INFO"
 log_file = "logs/agent.log"
 audit_file = "logs/audit.log"
+
+[reporting]
+# Directory where Terrance's morning reports are saved
+output_dir = "reports"
+# How many hours back to look when building the morning report
+lookback_hours = 24

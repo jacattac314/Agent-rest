@@ -20,7 +20,7 @@ from __future__ import annotations
 import json
 import logging
 import os
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
 from .executor import ExecutionResult, TaskExecutor
@@ -64,6 +64,10 @@ class MaintenanceCycle:
         self.human_review_min_risk: int = prio_cfg.get("human_review_min_risk", 8)
         self.max_tasks_per_cycle: int = prio_cfg.get("max_tasks_per_cycle", 5)
 
+        from .backlog import BacklogManager
+        output_dir = config.get("reporting", {}).get("output_dir", "reports")
+        self.backlog = BacklogManager(f"{output_dir}/terrance_backlog.json")
+
     def run(self) -> dict:
         """Execute one maintenance cycle and return a summary dict."""
         cycle_start = datetime.utcnow()
@@ -98,6 +102,9 @@ class MaintenanceCycle:
             len(deferred),
         )
 
+        # Update living backlog with current task state
+        self.backlog.sync_identified(self.repo_root, approved, deferred)
+
         # Phase 5-6: Execute & commit
         results: list[dict] = []
         for task in approved:
@@ -113,6 +120,18 @@ class MaintenanceCycle:
                     files_modified=exec_result.files_modified,
                     summary=exec_result.summary,
                 )
+
+            # Update backlog with execution result
+            if exec_result.success:
+                self.backlog.mark_done(
+                    repo_root=self.repo_root,
+                    task_id=task.id,
+                    branch=commit_info.branch if commit_info else None,
+                    commit_sha=commit_info.commit_sha if commit_info else None,
+                    summary=exec_result.summary,
+                )
+            else:
+                self.backlog.mark_failed(self.repo_root, task.id, exec_result.error or "unknown error")
 
             record = {
                 "cycle_start": cycle_start.isoformat(),
@@ -191,8 +210,27 @@ class MaintenanceScheduler:
             max_instances=1,        # prevent overlapping runs
             coalesce=True,
         )
+
+        # Terrance morning report — 7:55 AM CST (UTC-6 = 13:55 UTC)
+        self._scheduler.add_job(
+            self._deliver_morning_report,
+            trigger="cron",
+            hour=13,
+            minute=55,
+            timezone="UTC",
+            id="morning_report",
+            name="Terrance Morning Report (7:55 AM CST)",
+            max_instances=1,
+            coalesce=True,
+        )
         logger.info("Scheduler started — maintenance cycle every %d minute(s)", interval)
+        logger.info("Terrance morning report scheduled for 7:55 AM CST daily")
         self._scheduler.start()
+
+    def _deliver_morning_report(self) -> None:
+        """Callback invoked by APScheduler at 7:55 AM CST."""
+        from .reporter import deliver_report
+        deliver_report(self.config, self.repo_root)
 
     def run_once(self) -> dict:
         """Execute exactly one maintenance cycle synchronously (no scheduling)."""

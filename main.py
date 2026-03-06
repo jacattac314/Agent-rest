@@ -209,6 +209,108 @@ def tasks(
     console.print(t)
 
 
+@app.command()
+def report(
+    repo: str = _REPO_OPTION,
+    config_path: str = _CONFIG_OPTION,
+    hours: int = typer.Option(24, "--hours", "-h", help="Hours of history to include in the report"),
+    save: bool = typer.Option(True, "--save/--no-save", help="Save report to reports/ directory"),
+):
+    """Generate and print Terrance's morning report immediately."""
+    config = _load_config(config_path)
+    _setup_logging(config)
+    repo_root = str(Path(repo).resolve()) if repo else str(Path.cwd())
+
+    from agent.reporter import generate_report
+    audit_file = config.get("logging", {}).get("audit_file", "logs/audit.log")
+    output_dir = config.get("reporting", {}).get("output_dir", "reports") if save else None
+
+    result = generate_report(
+        audit_file=audit_file,
+        repo_root=repo_root,
+        lookback_hours=hours,
+        output_dir=output_dir,
+    )
+    print(result)
+
+
+@app.command()
+def backlog(
+    config_path: str = _CONFIG_OPTION,
+    all_repos: bool = typer.Option(False, "--all", help="Show tasks from all repos (default: current repo only)"),
+    show_done: bool = typer.Option(False, "--done", help="Include completed tasks"),
+):
+    """Browse Terrance's living cross-repository backlog."""
+    config = _load_config(config_path)
+    _setup_logging(config)
+
+    output_dir = config.get("reporting", {}).get("output_dir", "reports")
+    backlog_file = f"{output_dir}/terrance_backlog.json"
+
+    from agent.backlog import BacklogManager
+    bm = BacklogManager(backlog_file)
+
+    repo_filter = None if all_repos else str(Path.cwd())
+    pending = bm.get_pending(repo=repo_filter)
+    deferred = bm.get_deferred(repo=repo_filter)
+    summary = bm.get_summary()
+
+    console.print(f"\n[bold]Terrance's Living Backlog[/bold]")
+    console.print(f"State file : {backlog_file}")
+    console.print(f"Scope      : {'all repositories' if all_repos else str(Path.cwd())}")
+
+    by_status = summary.get("by_status", {})
+    console.print(
+        f"\nPending [green]{by_status.get('pending', 0)}[/green]  "
+        f"Deferred [yellow]{by_status.get('deferred', 0)}[/yellow]  "
+        f"Failed [red]{by_status.get('failed', 0)}[/red]  "
+        f"Done [cyan]{by_status.get('done', 0)}[/cyan]"
+    )
+
+    if pending:
+        console.print("\n[bold green]Pending — Auto-Queue[/bold green]")
+        t = Table(show_header=True, header_style="bold green")
+        t.add_column("Priority", justify="right", width=8)
+        t.add_column("Impact", justify="right", width=6)
+        t.add_column("Kind", width=22)
+        t.add_column("Title")
+        t.add_column("Repo", width=14)
+        for task in sorted(pending, key=lambda x: x.get("priority", 0), reverse=True):
+            repo_name = Path(task["repo"]).name
+            t.add_row(
+                str(task.get("priority", "?")),
+                str(task.get("impact_score", "?")),
+                task["kind"].replace("_", " ").title(),
+                task["title"][:55],
+                repo_name,
+            )
+        console.print(t)
+
+    if deferred:
+        console.print("\n[bold yellow]Deferred — Needs Human Review[/bold yellow]")
+        t = Table(show_header=True, header_style="bold yellow")
+        t.add_column("Risk", justify="right", width=5)
+        t.add_column("Impact", justify="right", width=6)
+        t.add_column("Kind", width=22)
+        t.add_column("Title")
+        t.add_column("Repo", width=14)
+        for task in sorted(deferred, key=lambda x: x.get("impact_score", 0), reverse=True):
+            repo_name = Path(task["repo"]).name
+            t.add_row(
+                f"[red]{task.get('risk_score', '?')}[/red]",
+                str(task.get("impact_score", "?")),
+                task["kind"].replace("_", " ").title(),
+                task["title"][:55],
+                repo_name,
+            )
+        console.print(t)
+
+    if not pending and not deferred:
+        console.print("\n[dim]No tasks in the backlog yet. Run the agent to populate it.[/dim]")
+
+    console.print(f"\n[dim]Full backlog → {output_dir}/BACKLOG.md[/dim]\n")
+
+
 def _print_cycle_summary(summary: dict):
     console.print(f"\n[bold]Maintenance Cycle Complete[/bold]")
     console.print(f"Tasks identified : {summary['tasks_identified']}")
