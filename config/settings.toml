@@ -44,3 +44,20 @@ audit_file = "logs/audit.log"
 output_dir = "reports"
 # How many hours back to look when building the morning report
 lookback_hours = 24
+
+[github]
+# Max number of starred repos to process per run
+max_stars = 50
+# Shallow clone depth (1 = latest commit only, faster)
+clone_depth = 1
+# Skip repos the user has forked
+skip_forks = true
+# Skip archived repos
+skip_archived = true
+# Only scan repos owned by the authenticated user (not other people's repos)
+only_owned = false
+# Actually apply and commit fixes to starred repos (requires push access)
+# Set to false for read-only scanning and reporting
+execute_tasks = false
+# Base directory for temporary clones (empty = system temp dir)
+temp_dir = ""

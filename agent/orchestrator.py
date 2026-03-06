@@ -75,6 +75,99 @@ class MultiAgentOrchestrator:
     # Public API
     # ------------------------------------------------------------------
 
+    def run_on_stars(self, progress_cb=None) -> list[dict]:
+        """
+        Fetch the authenticated user's GitHub starred repositories, clone each
+        one, and run a maintenance session against it.
+
+        Parameters
+        ----------
+        progress_cb : callable(repo_full_name, status, summary) | None
+            Optional callback invoked after each repo is processed.
+
+        Returns
+        -------
+        List of per-repo summary dicts, each with an added 'repo' key.
+        """
+        from .github_stars import GitHubStarsClient
+
+        client = GitHubStarsClient(self.config)
+        execute = self.config.get("github", {}).get("execute_tasks", False)
+
+        repos = client.fetch_starred()
+        cloned, clone_errors = client.clone_all(repos)
+
+        summaries: list[dict] = []
+
+        for repo in cloned:
+            repo_summary: dict = {"repo": repo.full_name, "html_url": repo.html_url}
+            try:
+                # Run only scan+plan when execute_tasks=False (read-only mode)
+                if execute:
+                    orig_root = self.repo_root
+                    self.repo_root = repo.local_path
+                    summary = self.run()
+                    self.repo_root = orig_root
+                else:
+                    summary = self._scan_only(repo.local_path)
+
+                repo_summary.update(summary)
+                logger.info(
+                    "[orchestrator] %s → %d tasks identified",
+                    repo.full_name,
+                    summary.get("tasks_identified", 0),
+                )
+            except Exception as exc:
+                repo_summary["error"] = str(exc)
+                logger.warning("[orchestrator] failed on %s: %s", repo.full_name, exc)
+            finally:
+                if progress_cb:
+                    progress_cb(repo.full_name, repo_summary.get("status", "error"), repo_summary)
+
+            summaries.append(repo_summary)
+
+        client.cleanup(cloned)
+
+        if clone_errors:
+            logger.warning("[orchestrator] clone errors: %s", clone_errors)
+
+        return summaries
+
+    def _scan_only(self, repo_path: str) -> dict:
+        """
+        Run scanner + planner in read-only mode (no execution, no commits).
+        Returns a lightweight summary suitable for reporting.
+        """
+        state = SharedState.new_session(repo_path, goal="read-only scan")
+        snapshot = self._scanner.scan(repo_path)
+        state.record_metric("files_scanned", len(snapshot.files))
+        state.record_metric("doc_gaps_found", len(snapshot.doc_gaps))
+        state.record_metric("code_smells_found", len(snapshot.code_smells))
+
+        self._planner.plan(snapshot, state)
+        state.transition(SessionStatus.COMPLETED)
+        self._save_state(state)
+
+        plan_counts: dict[str, int] = {}
+        for t in state.plan:
+            kind = t.get("kind", "unknown")
+            plan_counts[kind] = plan_counts.get(kind, 0) + 1
+
+        return {
+            "session_id": state.session_id,
+            "tasks_identified": len(state.plan),
+            "tasks_approved": 0,
+            "tasks_succeeded": 0,
+            "tasks_failed": 0,
+            "tasks_deferred": 0,
+            "tasks_skipped": len(state.plan),
+            "deferred_titles": [],
+            "task_results": [],
+            "metrics": state.metrics,
+            "plan_by_kind": plan_counts,
+            "status": SessionStatus.COMPLETED,
+        }
+
     def run(self) -> dict:
         """
         Execute a complete maintenance session and return a summary dict.

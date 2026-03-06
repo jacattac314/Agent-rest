@@ -2,16 +2,19 @@
 Autonomous Maintenance Agent — Entry Point
 ------------------------------------------
 Usage:
-  python main.py run     [--repo PATH] [--once]
-  python main.py scan    [--repo PATH]
-  python main.py tasks   [--repo PATH]
-  python main.py agents  [--repo PATH]
+  python main.py run         [--repo PATH] [--once]
+  python main.py scan        [--repo PATH]
+  python main.py tasks       [--repo PATH]
+  python main.py agents      [--repo PATH]
+  python main.py scan-stars  [--execute]
 
 Commands:
-  run     Start the maintenance agent (daemon or one-shot)
-  scan    Only scan the repo and print the health report
-  tasks   Scan + identify + prioritize tasks, print them, do NOT execute
-  agents  Run a single multi-agent session (Planner→Executor→Verifier)
+  run         Start the maintenance agent (daemon or one-shot)
+  scan        Only scan the repo and print the health report
+  tasks       Scan + identify + prioritize tasks, print them, do NOT execute
+  agents      Run a single multi-agent session (Planner→Executor→Verifier)
+  scan-stars  Scan all GitHub starred repos and report findings
+              (requires GITHUB_TOKEN env var)
 """
 
 from __future__ import annotations
@@ -335,6 +338,109 @@ def backlog(
         console.print("\n[dim]No tasks in the backlog yet. Run the agent to populate it.[/dim]")
 
     console.print(f"\n[dim]Full backlog → {output_dir}/BACKLOG.md[/dim]\n")
+
+
+@app.command(name="scan-stars")
+def scan_stars(
+    config_path: str = _CONFIG_OPTION,
+    execute: bool = typer.Option(
+        False, "--execute",
+        help="Apply and commit fixes (requires push access to each repo). "
+             "Default is read-only scan.",
+    ),
+    output_json: bool = typer.Option(False, "--json", help="Output raw JSON results"),
+    max_stars: int = typer.Option(0, "--max", "-n", help="Override max repos (0 = use config)"),
+):
+    """
+    Scan all GitHub starred repositories and report maintenance findings.
+
+    Requires the GITHUB_TOKEN environment variable (personal access token).
+    By default runs in read-only mode (no changes made to remote repos).
+    Pass --execute to also apply low-risk fixes to repos you own.
+    """
+    import os
+    config = _load_config(config_path)
+    _setup_logging(config)
+
+    if not os.environ.get("GITHUB_TOKEN"):
+        console.print(
+            "[bold red]Error:[/bold red] GITHUB_TOKEN is not set.\n"
+            "Create a token at https://github.com/settings/tokens and run:\n"
+            "  export GITHUB_TOKEN=your_token_here"
+        )
+        raise typer.Exit(1)
+
+    # Apply CLI overrides
+    if execute:
+        config.setdefault("github", {})["execute_tasks"] = True
+    if max_stars > 0:
+        config.setdefault("github", {})["max_stars"] = max_stars
+
+    mode = "execute" if config.get("github", {}).get("execute_tasks") else "read-only scan"
+    console.print(f"[bold green]GitHub Starred Repos — {mode}[/bold green]")
+
+    from agent.orchestrator import MultiAgentOrchestrator
+
+    orch = MultiAgentOrchestrator(config, repo_root=str(Path.cwd()))
+
+    processed = 0
+
+    def _progress(repo_name: str, status: str, summary: dict) -> None:
+        nonlocal processed
+        processed += 1
+        tasks = summary.get("tasks_identified", 0)
+        indicator = "[green]✓[/green]" if "error" not in summary else "[red]✗[/red]"
+        console.print(f"  {indicator} [{processed:>3}] {repo_name}  — {tasks} tasks identified")
+
+    summaries = orch.run_on_stars(progress_cb=_progress)
+
+    if output_json:
+        print(json.dumps(summaries, default=str, indent=2))
+        return
+
+    # ------------------------------------------------------------------ Summary table
+    console.print(f"\n[bold]Starred Repositories Summary[/bold]  ({len(summaries)} repos)")
+
+    t = Table(show_header=True, header_style="bold cyan")
+    t.add_column("#",        justify="right", width=4)
+    t.add_column("Repository",               width=40)
+    t.add_column("Tasks",    justify="right", width=6)
+    t.add_column("Files",    justify="right", width=6)
+    t.add_column("Doc Gaps", justify="right", width=9)
+    t.add_column("Smells",   justify="right", width=7)
+    t.add_column("Status",                   width=10)
+
+    total_tasks = 0
+    for i, s in enumerate(summaries, 1):
+        metrics = s.get("metrics", {})
+        tasks = s.get("tasks_identified", 0)
+        total_tasks += tasks
+        status_str = "[red]error[/red]" if "error" in s else "[green]ok[/green]"
+        t.add_row(
+            str(i),
+            s.get("repo", "?"),
+            str(tasks),
+            str(metrics.get("files_scanned", "—")),
+            str(metrics.get("doc_gaps_found", "—")),
+            str(metrics.get("code_smells_found", "—")),
+            status_str,
+        )
+    console.print(t)
+    console.print(f"\nTotal maintenance tasks found across all starred repos: [bold]{total_tasks}[/bold]")
+
+    # Show repos with most tasks
+    top = sorted(summaries, key=lambda s: s.get("tasks_identified", 0), reverse=True)[:5]
+    if top and top[0].get("tasks_identified", 0) > 0:
+        console.print("\n[bold]Top repos by task count:[/bold]")
+        for s in top:
+            tasks = s.get("tasks_identified", 0)
+            if tasks:
+                by_kind = s.get("plan_by_kind", {})
+                top_kinds = ", ".join(
+                    f"{k.replace('_', ' ')} ({v})"
+                    for k, v in sorted(by_kind.items(), key=lambda x: -x[1])[:3]
+                )
+                console.print(f"  • {s['repo']}  {tasks} tasks  [{top_kinds}]")
 
 
 @app.command()
