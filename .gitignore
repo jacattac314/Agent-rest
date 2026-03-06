@@ -15,6 +15,9 @@ env/
 # Logs
 logs/
 
+# Generated reports (runtime artifacts)
+reports/
+
 # Environment
 .env
 .env.*
