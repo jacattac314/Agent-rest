@@ -72,8 +72,8 @@ class PlannerAgent:
         try:
             scored: list[MaintenanceTask] = self._prioritizer.prioritize(raw_tasks)
         except Exception as exc:
-            logger.warning("[planner] prioritizer failed (%s), using raw order", exc)
-            scored = raw_tasks
+            logger.warning("[planner] prioritizer failed (%s), applying rule-based defaults", exc)
+            scored = _apply_default_scores(raw_tasks)
 
         # 3. Convert to TaskNode objects
         nodes: list[TaskNode] = [_task_to_node(t) for t in scored]
@@ -97,6 +97,31 @@ class PlannerAgent:
 # ---------------------------------------------------------------------------
 # Helper
 # ---------------------------------------------------------------------------
+
+# Rule-based default scores used when the Claude API prioritizer is unavailable.
+# Keyed by TaskKind value: (impact, risk)
+_DEFAULT_SCORES: dict[str, tuple[int, int]] = {
+    "add_readme":              (6, 1),
+    "add_module_docstring":    (4, 1),
+    "add_function_docstring":  (4, 1),
+    "add_class_docstring":     (4, 1),
+    "add_type_hints":          (4, 1),
+    "refactor_long_function":  (5, 6),
+    "address_todo":            (3, 3),
+    "audit_dependencies":      (6, 1),
+    "improve_test_coverage":   (7, 3),
+}
+
+
+def _apply_default_scores(tasks: list[MaintenanceTask]) -> list[MaintenanceTask]:
+    """Assign conservative rule-based impact/risk scores and sort by priority."""
+    for t in tasks:
+        impact, risk = _DEFAULT_SCORES.get(t.kind.value, (3, 3))
+        t.impact_score = impact
+        t.risk_score = risk
+        t.priority = impact * (10 - risk)
+    return sorted(tasks, key=lambda t: t.priority, reverse=True)
+
 
 def _task_to_node(task: MaintenanceTask) -> TaskNode:
     return TaskNode(
