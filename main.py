@@ -1,5 +1,5 @@
 """
-Autonomous Maintenance Agent — Entry Point
+Bill — Entry Point
 ------------------------------------------
 Usage:
   python main.py run   [--repo PATH] [--once]
@@ -93,7 +93,7 @@ def run(
     _setup_logging(config)
     repo_root = str(Path(repo).resolve()) if repo else str(Path.cwd())
 
-    console.print(f"[bold green]Autonomous Maintenance Agent[/bold green]")
+    console.print(f"[bold green]Bill[/bold green]")
     console.print(f"Repository : {repo_root}")
     console.print(f"Config     : {config_path}")
     console.print(f"Mode       : {'one-shot' if once else 'daemon'}")
@@ -216,7 +216,7 @@ def report(
     hours: int = typer.Option(24, "--hours", "-h", help="Hours of history to include in the report"),
     save: bool = typer.Option(True, "--save/--no-save", help="Save report to reports/ directory"),
 ):
-    """Generate and print Terrance's morning report immediately."""
+    """Generate and print Bill's morning report immediately."""
     config = _load_config(config_path)
     _setup_logging(config)
     repo_root = str(Path(repo).resolve()) if repo else str(Path.cwd())
@@ -240,12 +240,12 @@ def backlog(
     all_repos: bool = typer.Option(False, "--all", help="Show tasks from all repos (default: current repo only)"),
     show_done: bool = typer.Option(False, "--done", help="Include completed tasks"),
 ):
-    """Browse Terrance's living cross-repository backlog."""
+    """Browse Bill's living cross-repository backlog."""
     config = _load_config(config_path)
     _setup_logging(config)
 
     output_dir = config.get("reporting", {}).get("output_dir", "reports")
-    backlog_file = f"{output_dir}/terrance_backlog.json"
+    backlog_file = f"{output_dir}/bill_backlog.json"
 
     from agent.backlog import BacklogManager
     bm = BacklogManager(backlog_file)
@@ -255,7 +255,7 @@ def backlog(
     deferred = bm.get_deferred(repo=repo_filter)
     summary = bm.get_summary()
 
-    console.print(f"\n[bold]Terrance's Living Backlog[/bold]")
+    console.print(f"\n[bold]Bill's Living Backlog[/bold]")
     console.print(f"State file : {backlog_file}")
     console.print(f"Scope      : {'all repositories' if all_repos else str(Path.cwd())}")
 

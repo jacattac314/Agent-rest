@@ -44,7 +44,7 @@ class GitIntegration:
     def __init__(self, config: dict):
         self.auto_commit: bool = config["git"].get("auto_commit", True)
         self.branch_prefix: str = config["git"].get("branch_prefix", "agent/maintenance")
-        self.author_name: str = config["git"].get("author_name", "Autonomous Maintenance Agent")
+        self.author_name: str = config["git"].get("author_name", "Bill")
         self.author_email: str = config["git"].get("author_email", "agent@maintenance.bot")
 
     def commit_task(
@@ -114,7 +114,7 @@ class GitIntegration:
                 f"{summary}\n\n"
                 f"Files changed:\n"
                 + "\n".join(f"  - {f}" for f in existing)
-                + "\n\nApplied by Autonomous Maintenance Agent"
+                + "\n\nApplied by Bill"
             )
 
             actor = repo.config_reader()

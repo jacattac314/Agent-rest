@@ -1,5 +1,5 @@
 """
-Terrance — Morning Report Generator
+Bill — Morning Report Generator
 -------------------------------------
 Reads the audit log and repository state to produce a concise daily briefing,
 delivered at 7:55 AM CST every morning.
@@ -61,7 +61,7 @@ def generate_report(
     output_dir: Optional[str] = None,
 ) -> str:
     """
-    Build Terrance's morning report.
+    Build Bill's morning report.
 
     Returns the report as a plain-text string and optionally saves it to
     *output_dir*/morning_report_YYYY-MM-DD.txt.
@@ -97,7 +97,7 @@ def generate_report(
 
     lines: list[str] = []
     lines.append("=" * 62)
-    lines.append(f"  Good morning! This is Terrance — your Maintenance Report")
+    lines.append(f"  Good morning! This is Bill — your Maintenance Report")
     lines.append(f"  {date_str}  |  {time_str}")
     lines.append("=" * 62)
     lines.append("")
@@ -168,7 +168,7 @@ def generate_report(
         from .backlog import BacklogManager
         from pathlib import Path as _Path
         _out = output_dir or "reports"
-        backlog_path = str(_Path(_out) / "terrance_backlog.json")
+        backlog_path = str(_Path(_out) / "bill_backlog.json")
         bm = BacklogManager(backlog_path)
         bsummary = bm.get_summary()
         by_status = bsummary.get("by_status", {})
@@ -233,7 +233,7 @@ def generate_report(
     lines.append("  • Run  python main.py backlog  to browse the full backlog.")
     lines.append("")
     lines.append("=" * 62)
-    lines.append("  Have a great day!  — Terrance")
+    lines.append("  Have a great day!  — Bill")
     lines.append("=" * 62)
     lines.append("")
 
@@ -245,7 +245,7 @@ def generate_report(
         out_path.mkdir(parents=True, exist_ok=True)
         filename = out_path / f"morning_report_{now.strftime('%Y-%m-%d')}.txt"
         filename.write_text(report, encoding="utf-8")
-        logger.info("Terrance morning report saved to %s", filename)
+        logger.info("Bill morning report saved to %s", filename)
 
     return report
 
@@ -266,4 +266,4 @@ def deliver_report(config: dict, repo_root: str) -> None:
         output_dir=output_dir,
     )
     print(report)
-    logger.info("Terrance morning report delivered.")
+    logger.info("Bill morning report delivered.")

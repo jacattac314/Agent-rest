@@ -1,9 +1,9 @@
 """
-Terrance's Living Backlog
+Bill's Living Backlog
 --------------------------
-A persistent, cross-repository task backlog maintained by Terrance.
+A persistent, cross-repository task backlog maintained by Bill.
 
-State is stored in a JSON file (default: reports/terrance_backlog.json).
+State is stored in a JSON file (default: reports/bill_backlog.json).
 A human-readable Markdown render is written alongside it as BACKLOG.md.
 
 Lifecycle of a task:
@@ -29,12 +29,12 @@ TaskStatus = Literal["pending", "done", "deferred", "failed", "dismissed"]
 
 class BacklogManager:
     """
-    Reads, updates, and writes Terrance's multi-repo living backlog.
+    Reads, updates, and writes Bill's multi-repo living backlog.
 
     All timestamps are stored as UTC ISO-8601 strings.
     """
 
-    def __init__(self, backlog_file: str = "reports/terrance_backlog.json"):
+    def __init__(self, backlog_file: str = "reports/bill_backlog.json"):
         self.path = Path(backlog_file)
         self.md_path = self.path.with_suffix(".md").with_name("BACKLOG.md")
         self.path.parent.mkdir(parents=True, exist_ok=True)
@@ -211,7 +211,7 @@ class BacklogManager:
         deferred.sort(key=lambda t: t.get("impact_score", 0), reverse=True)
 
         lines: list[str] = []
-        lines.append("# Terrance's Living Backlog")
+        lines.append("# Bill's Living Backlog")
         lines.append("")
         lines.append(f"*Last updated: {now_str}*")
         lines.append("")
@@ -296,7 +296,7 @@ class BacklogManager:
             lines.append("")
 
         lines.append("---")
-        lines.append("*Maintained automatically by Terrance — Autonomous Maintenance Agent*")
+        lines.append("*Maintained automatically by Bill — Bill*")
 
         self.md_path.write_text("\n".join(lines), encoding="utf-8")
         logger.debug("Backlog Markdown written to %s", self.md_path)

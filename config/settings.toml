@@ -31,7 +31,7 @@ auto_commit = true
 # Branch prefix for agent-created fix branches
 branch_prefix = "agent/maintenance"
 # Commit author
-author_name = "Autonomous Maintenance Agent"
+author_name = "Bill"
 author_email = "agent@maintenance.bot"
 
 [logging]

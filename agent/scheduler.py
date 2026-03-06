@@ -185,7 +185,7 @@ class MaintenanceCycle:
 
         from .backlog import BacklogManager
         output_dir = config.get("reporting", {}).get("output_dir", "reports")
-        self.backlog = BacklogManager(f"{output_dir}/terrance_backlog.json")
+        self.backlog = BacklogManager(f"{output_dir}/bill_backlog.json")
         self.feature_research = FeatureResearchJob(config, repo_root)
 
     def run(self) -> dict:
@@ -342,7 +342,7 @@ class MaintenanceScheduler:
             coalesce=True,
         )
 
-        # Terrance morning report — 7:55 AM CST (UTC-6 = 13:55 UTC)
+        # Bill morning report — 7:55 AM CST (UTC-6 = 13:55 UTC)
         self._scheduler.add_job(
             self._deliver_morning_report,
             trigger="cron",
@@ -350,12 +350,12 @@ class MaintenanceScheduler:
             minute=55,
             timezone="UTC",
             id="morning_report",
-            name="Terrance Morning Report (7:55 AM CST)",
+            name="Bill Morning Report (7:55 AM CST)",
             max_instances=1,
             coalesce=True,
         )
         logger.info("Scheduler started — maintenance cycle every %d minute(s)", interval)
-        logger.info("Terrance morning report scheduled for 7:55 AM CST daily")
+        logger.info("Bill morning report scheduled for 7:55 AM CST daily")
         self._scheduler.start()
 
     def _deliver_morning_report(self) -> None:

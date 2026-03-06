@@ -154,6 +154,6 @@ class PullRequestCreator:
             f"---\n\n"
             f"{plan_content}\n\n"
             f"---\n\n"
-            f"*This draft PR was opened automatically by the Autonomous Maintenance Agent.*  \n"
+            f"*This draft PR was opened automatically by the Bill.*  \n"
             f"*Review the plan above, assign a developer, and mark as ready when implementation begins.*"
         )
