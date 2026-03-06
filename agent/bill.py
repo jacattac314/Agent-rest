@@ -47,7 +47,7 @@ _KIND_OPENERS: dict[str, str] = {
         "No return type on this function. "
         "Putting the signs up so nobody guesses wrong."
     ),
-    TaskKind.RESOLVE_TODO.value: (
+    TaskKind.ADDRESS_TODO.value: (
         "Found a TODO somebody left behind. "
         "I hate unfinished work. Let's close it out."
     ),
@@ -59,7 +59,7 @@ _KIND_OPENERS: dict[str, str] = {
         "Time to check what's lurking in the supply closet. "
         "Unpinned packages give me the creeps."
     ),
-    TaskKind.ADD_TESTS.value: (
+    TaskKind.IMPROVE_TEST_COVERAGE.value: (
         "No tests? That's a load-bearing wall with no inspection. "
         "Writing a basic check so at least something's verified."
     ),
@@ -96,10 +96,10 @@ _KIND_CLOSERS_SUCCESS: dict[str, str] = {
     TaskKind.ADD_MODULE_DOCSTRING.value: "Header's on the module. Labelled the fuse box.",
     TaskKind.ADD_CLASS_DOCSTRING.value: "Class has docs now. Mystery solved.",
     TaskKind.ADD_TYPE_HINTS.value: "Types are annotated. Signs are up.",
-    TaskKind.RESOLVE_TODO.value: "TODO's gone. Finished what they started.",
+    TaskKind.ADDRESS_TODO.value: "TODO's gone. Finished what they started.",
     TaskKind.REFACTOR_LONG_FUNCTION.value: "Trimmed it down. Still does the job, just cleaner.",
     TaskKind.AUDIT_DEPENDENCIES.value: "Audit report written. Now you know what's in the closet.",
-    TaskKind.ADD_TESTS.value: "Test is in. One less unverified load-bearing wall.",
+    TaskKind.IMPROVE_TEST_COVERAGE.value: "Test is in. One less unverified load-bearing wall.",
 }
 
 _KIND_CLOSERS_FAILURE: dict[str, str] = {
@@ -108,10 +108,10 @@ _KIND_CLOSERS_FAILURE: dict[str, str] = {
     TaskKind.ADD_MODULE_DOCSTRING.value: "Module header job hit a snag. Needs a look.",
     TaskKind.ADD_CLASS_DOCSTRING.value: "Class docs didn't land. Check the error.",
     TaskKind.ADD_TYPE_HINTS.value: "Type hints didn't go in cleanly. Something's off.",
-    TaskKind.RESOLVE_TODO.value: "Couldn't resolve the TODO. Didn't touch it.",
+    TaskKind.ADDRESS_TODO.value: "Couldn't resolve the TODO. Didn't touch it.",
     TaskKind.REFACTOR_LONG_FUNCTION.value: "Refactor stalled. Not touching it if I can't do it right.",
     TaskKind.AUDIT_DEPENDENCIES.value: "Dependency audit ran into trouble. Manifest might be malformed.",
-    TaskKind.ADD_TESTS.value: "Test job failed. Left the file as-is.",
+    TaskKind.IMPROVE_TEST_COVERAGE.value: "Test job failed. Left the file as-is.",
 }
 
 _DEFAULT_CLOSER_SUCCESS = "Done. Moved on."
