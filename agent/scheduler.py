@@ -1,15 +1,22 @@
 """
 Maintenance Scheduler
 ---------------------
-Orchestrates the full maintenance cycle on a configurable interval:
+Orchestrates the full maintenance cycle on a configurable interval.
 
-  1. Scan the repository          (RepositoryScanner)
-  2. Identify maintenance tasks   (TaskIdentifier)
-  3. Prioritize tasks             (TaskPrioritizer)
-  4. Filter to auto-executable tasks (risk < threshold, impact >= threshold)
-  5. Execute each task            (TaskExecutor)
-  6. Commit changes               (GitIntegration)
-  7. Write audit log entry        (AuditLogger)
+Two execution modes are supported (controlled by config [agent].multi_agent):
+
+  Classic mode (default, multi_agent = false):
+    1. Scan the repository          (RepositoryScanner)
+    2. Identify maintenance tasks   (TaskIdentifier)
+    3. Prioritize tasks             (TaskPrioritizer)
+    4. Filter to auto-executable tasks
+    5. Execute each task            (TaskExecutor)
+    6. Commit changes               (GitIntegration)
+    7. Write audit log entry        (AuditLogger)
+
+  Multi-agent mode (multi_agent = true):
+    Delegates to MultiAgentOrchestrator which runs the full
+    Planner → Executor → Verifier pipeline with SharedState tracking.
 
 Uses APScheduler for background scheduling.  The scheduler can also be
 triggered manually (run_now=True) for one-shot operation.
@@ -174,12 +181,26 @@ class MaintenanceCycle:
 class MaintenanceScheduler:
     """
     Wraps APScheduler to run MaintenanceCycle on a configurable interval.
+
+    When config[agent][multi_agent] is True the scheduler uses
+    MultiAgentOrchestrator (Planner + Executor + Verifier pipeline with
+    SharedState) instead of the classic single-loop MaintenanceCycle.
     """
 
     def __init__(self, config: dict, repo_root: str):
         self.config = config
         self.repo_root = repo_root
-        self.cycle = MaintenanceCycle(config, repo_root)
+        self._use_multi_agent: bool = config.get("agent", {}).get("multi_agent", False)
+
+        if self._use_multi_agent:
+            from .orchestrator import MultiAgentOrchestrator
+            self._orchestrator = MultiAgentOrchestrator(config, repo_root)
+            self._cycle_fn = self._orchestrator.run
+            logger.info("Multi-agent orchestrator enabled")
+        else:
+            self.cycle = MaintenanceCycle(config, repo_root)
+            self._cycle_fn = self.cycle.run
+
         self._scheduler = None
 
     def start(self, run_now: bool = True, blocking: bool = True):
@@ -199,12 +220,12 @@ class MaintenanceScheduler:
 
         if run_now:
             logger.info("Running immediate startup maintenance cycle…")
-            self.cycle.run()
+            self._cycle_fn()
 
         SchedulerClass = BlockingScheduler if blocking else BackgroundScheduler
         self._scheduler = SchedulerClass()
         self._scheduler.add_job(
-            self.cycle.run,
+            self._cycle_fn,
             trigger="interval",
             minutes=interval,
             id="maintenance_cycle",
@@ -236,7 +257,7 @@ class MaintenanceScheduler:
 
     def run_once(self) -> dict:
         """Execute exactly one maintenance cycle synchronously (no scheduling)."""
-        return self.cycle.run()
+        return self._cycle_fn()
 
     def stop(self):
         if self._scheduler and self._scheduler.running:

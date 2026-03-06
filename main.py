@@ -2,14 +2,16 @@
 Autonomous Maintenance Agent — Entry Point
 ------------------------------------------
 Usage:
-  python main.py run   [--repo PATH] [--once]
-  python main.py scan  [--repo PATH]
-  python main.py tasks [--repo PATH]
+  python main.py run     [--repo PATH] [--once]
+  python main.py scan    [--repo PATH]
+  python main.py tasks   [--repo PATH]
+  python main.py agents  [--repo PATH]
 
 Commands:
-  run    Start the maintenance agent (daemon or one-shot)
-  scan   Only scan the repo and print the health report
-  tasks  Scan + identify + prioritize tasks, print them, do NOT execute
+  run     Start the maintenance agent (daemon or one-shot)
+  scan    Only scan the repo and print the health report
+  tasks   Scan + identify + prioritize tasks, print them, do NOT execute
+  agents  Run a single multi-agent session (Planner→Executor→Verifier)
 """
 
 from __future__ import annotations
@@ -333,6 +335,51 @@ def backlog(
         console.print("\n[dim]No tasks in the backlog yet. Run the agent to populate it.[/dim]")
 
     console.print(f"\n[dim]Full backlog → {output_dir}/BACKLOG.md[/dim]\n")
+
+
+@app.command()
+def agents(
+    repo: str = _REPO_OPTION,
+    config_path: str = _CONFIG_OPTION,
+    output_json: bool = typer.Option(False, "--json", help="Output raw JSON summary"),
+):
+    """
+    Run one multi-agent maintenance session using the full
+    Planner → Executor → Verifier pipeline with SharedState tracking.
+
+    This is equivalent to 'run --once' when [agent] multi_agent = true,
+    but can be invoked directly without changing settings.toml.
+    """
+    config = _load_config(config_path)
+    _setup_logging(config)
+    repo_root = str(Path(repo).resolve()) if repo else str(Path.cwd())
+
+    console.print(f"[bold green]Multi-Agent Maintenance Session[/bold green]")
+    console.print(f"Repository : {repo_root}")
+
+    from agent.orchestrator import MultiAgentOrchestrator
+    orch = MultiAgentOrchestrator(config, repo_root)
+    summary = orch.run()
+
+    if output_json:
+        print(json.dumps(summary, default=str, indent=2))
+        return
+
+    _print_cycle_summary(summary)
+
+    metrics = summary.get("metrics", {})
+    if metrics:
+        console.print("\n[bold]Session Metrics[/bold]")
+        t = Table(show_header=False)
+        t.add_column("Key", style="dim")
+        t.add_column("Value", justify="right")
+        for k, v in metrics.items():
+            t.add_row(k.replace("_", " ").title(), str(v))
+        console.print(t)
+
+    session_id = summary.get("session_id", "")
+    if session_id:
+        console.print(f"\n[dim]Session log → logs/sessions/session_{session_id}.json[/dim]")
 
 
 def _print_cycle_summary(summary: dict):
