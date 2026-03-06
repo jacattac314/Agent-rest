@@ -79,6 +79,7 @@ class RepositoryScanner:
     }
 
     TODO_PATTERN = re.compile(r"#\s*(TODO|FIXME|HACK|XXX|BUG|NOTE)\b[:\s]*(.*)", re.IGNORECASE)
+    FEATURE_PATTERN = re.compile(r"#\s*(FEATURE|MISSING)\b[:\s]*(.*)", re.IGNORECASE)
 
     def __init__(self, config: dict):
         self.include_exts: set[str] = set(config["scanner"].get("include_extensions", []))
@@ -121,6 +122,7 @@ class RepositoryScanner:
 
             # Generic TODO scan for all text files
             snapshot.code_smells.extend(self._todo_scan(rel, content))
+            snapshot.code_smells.extend(self._feature_scan(rel, content))
 
             # Dependency manifests
             manifest = self._detect_manifest(rel, content)
@@ -228,6 +230,19 @@ class RepositoryScanner:
                 smells.append(CodeSmell(
                     file_path=rel_path,
                     kind="todo",
+                    description=f"{m.group(1).upper()}: {m.group(2).strip()}",
+                    line=lineno,
+                ))
+        return smells
+
+    def _feature_scan(self, rel_path: str, content: str) -> list[CodeSmell]:
+        smells: list[CodeSmell] = []
+        for lineno, line in enumerate(content.splitlines(), 1):
+            m = self.FEATURE_PATTERN.search(line)
+            if m:
+                smells.append(CodeSmell(
+                    file_path=rel_path,
+                    kind="missing_feature",
                     description=f"{m.group(1).upper()}: {m.group(2).strip()}",
                     line=lineno,
                 ))

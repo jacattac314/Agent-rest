@@ -25,7 +25,10 @@ from pathlib import Path
 
 from .executor import ExecutionResult, TaskExecutor
 from .git_integration import CommitInfo, GitIntegration
-from .identifier import MaintenanceTask, TaskIdentifier
+from .github_search import GitHubSearcher
+from .identifier import MaintenanceTask, TaskIdentifier, TaskKind
+from .implementation_planner import ImplementationPlanner
+from .pr_creator import PullRequestCreator
 from .prioritizer import TaskPrioritizer
 from .scanner import RepositoryScanner, RepositorySnapshot
 
@@ -42,6 +45,122 @@ class AuditLogger:
     def log(self, record: dict):
         with self.path.open("a", encoding="utf-8") as fh:
             fh.write(json.dumps(record) + "\n")
+
+
+class FeatureResearchJob:
+    """
+    Executes the full missing-feature research pipeline for a single task:
+
+      1. Search GitHub for relevant code and repositories.
+      2. Use Claude API to write a structured implementation plan.
+      3. Commit the plan file to a new branch via GitIntegration.
+      4. Open a draft GitHub pull request with the plan as the PR body.
+
+    This job is scheduled by MaintenanceScheduler whenever the main maintenance
+    cycle surfaces one or more IMPLEMENT_MISSING_FEATURE tasks.
+    """
+
+    def __init__(self, config: dict, repo_root: str):
+        self.config = config
+        self.repo_root = repo_root
+        github_cfg = config.get("github", {})
+        self.searcher = GitHubSearcher(token=github_cfg.get("token"))
+        self.planner = ImplementationPlanner(config)
+        self.git = GitIntegration(config)
+        self.pr_creator = PullRequestCreator(config)
+        self.audit = AuditLogger(config["logging"].get("audit_file", "logs/audit.log"))
+
+    def run(self, task: MaintenanceTask) -> dict:
+        """
+        Run the full research-and-plan pipeline for one missing-feature task.
+
+        Args:
+            task: An IMPLEMENT_MISSING_FEATURE MaintenanceTask.
+
+        Returns:
+            A summary dict logged to the audit file.
+        """
+        logger.info("FeatureResearchJob: starting for task '%s'", task.title)
+        feature_description = task.context.get("feature_description", task.description)
+
+        # Step 1 — Search GitHub
+        search_results = self.searcher.search(
+            feature_description=feature_description,
+            language=self._detect_language(task.file_path),
+        )
+        logger.info(
+            "GitHub search complete: %d code, %d repo results",
+            len(search_results.code_results),
+            len(search_results.repo_results),
+        )
+
+        # Step 2 — Write implementation plan
+        plan_path = self.planner.create_plan(
+            task=task,
+            search_results=search_results,
+            repo_root=self.repo_root,
+        )
+        logger.info("Implementation plan written: %s", plan_path)
+
+        # Step 3 — Commit plan file to a new branch
+        commit_info = self.git.commit_task(
+            repo_root=self.repo_root,
+            task_id=task.id,
+            task_title=f"feat: implementation plan — {task.title}",
+            files_modified=[plan_path],
+            summary=f"Auto-generated implementation plan for: {task.title}",
+        )
+
+        pr_url = ""
+        pr_error = ""
+
+        # Step 4 — Open a draft pull request (only if we have a committed branch)
+        if commit_info:
+            pr_result = self.pr_creator.create_pr(
+                branch=commit_info.branch,
+                title=f"feat: {task.title}",
+                plan_path=plan_path,
+                task_description=feature_description,
+            )
+            if pr_result.success:
+                pr_url = pr_result.pr_url
+                logger.info("Draft PR opened: %s", pr_url)
+            else:
+                pr_error = pr_result.error
+                logger.warning("PR creation skipped: %s", pr_error)
+        else:
+            logger.info("No commit produced (plan file may already be tracked); skipping PR.")
+
+        record = {
+            "job": "feature_research",
+            "task_id": task.id,
+            "task_title": task.title,
+            "github_query": search_results.query,
+            "code_results": len(search_results.code_results),
+            "repo_results": len(search_results.repo_results),
+            "plan_path": plan_path,
+            "branch": commit_info.branch if commit_info else None,
+            "pr_url": pr_url,
+            "pr_error": pr_error,
+        }
+        self.audit.log(record)
+        return record
+
+    def _detect_language(self, file_path: str) -> str | None:
+        """Return a GitHub-compatible language name based on file extension."""
+        ext_map = {
+            ".py": "python",
+            ".ts": "typescript",
+            ".tsx": "typescript",
+            ".js": "javascript",
+            ".jsx": "javascript",
+            ".go": "go",
+            ".rs": "rust",
+            ".java": "java",
+            ".rb": "ruby",
+        }
+        from pathlib import Path as _Path
+        return ext_map.get(_Path(file_path).suffix.lower())
 
 
 class MaintenanceCycle:
@@ -67,6 +186,7 @@ class MaintenanceCycle:
         from .backlog import BacklogManager
         output_dir = config.get("reporting", {}).get("output_dir", "reports")
         self.backlog = BacklogManager(f"{output_dir}/terrance_backlog.json")
+        self.feature_research = FeatureResearchJob(config, repo_root)
 
     def run(self) -> dict:
         """Execute one maintenance cycle and return a summary dict."""
@@ -153,6 +273,14 @@ class MaintenanceCycle:
             self.audit.log(record)
             results.append(record)
 
+        # Phase 7: Research missing-feature tasks — search GitHub, write plan, open PR
+        feature_tasks = [t for t in tasks if t.kind == TaskKind.IMPLEMENT_MISSING_FEATURE]
+        feature_research_results: list[dict] = []
+        for feature_task in feature_tasks:
+            logger.info("Running feature research for: %s", feature_task.title)
+            research_record = self.feature_research.run(feature_task)
+            feature_research_results.append(research_record)
+
         cycle_summary = {
             "cycle_start": cycle_start.isoformat(),
             "cycle_end": datetime.utcnow().isoformat(),
@@ -165,6 +293,7 @@ class MaintenanceCycle:
             "tasks_failed": sum(1 for r in results if not r["success"]),
             "task_results": results,
             "deferred_titles": [t.title for t in deferred],
+            "feature_research": feature_research_results,
         }
         logger.info("=== Cycle complete: %d/%d tasks succeeded ===",
                     cycle_summary["tasks_succeeded"], len(approved))

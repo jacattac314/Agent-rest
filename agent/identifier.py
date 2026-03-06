@@ -25,6 +25,7 @@ class TaskKind(str, Enum):
     ADDRESS_TODO = "address_todo"
     AUDIT_DEPENDENCIES = "audit_dependencies"
     IMPROVE_TEST_COVERAGE = "improve_test_coverage"
+    IMPLEMENT_MISSING_FEATURE = "implement_missing_feature"
 
 
 @dataclass
@@ -61,6 +62,7 @@ class TaskIdentifier:
         tasks.extend(self._todo_tasks(snapshot, seen))
         tasks.extend(self._dep_audit_tasks(snapshot, seen))
         tasks.extend(self._test_coverage_tasks(snapshot, seen))
+        tasks.extend(self._missing_feature_tasks(snapshot, seen))
 
         return tasks
 
@@ -220,6 +222,30 @@ class TaskIdentifier:
                 file_path=manifest.file_path,
                 context={"manager": manifest.manager, "content": manifest.raw_content[:2000]},
             ))
+        return tasks
+
+    def _missing_feature_tasks(self, snapshot: RepositorySnapshot, seen: set) -> list[MaintenanceTask]:
+        """Surface FEATURE/MISSING comments as implement-missing-feature tasks (up to 5)."""
+        tasks = []
+        for smell in snapshot.code_smells:
+            if smell.kind == "missing_feature" and len(tasks) < 5:
+                key = f"feature:{smell.file_path}:{smell.line}"
+                if key in seen:
+                    continue
+                seen.add(key)
+                tasks.append(MaintenanceTask(
+                    id=key,
+                    kind=TaskKind.IMPLEMENT_MISSING_FEATURE,
+                    title=f"Implement missing feature in {smell.file_path}:{smell.line}",
+                    description=(
+                        f"Found `{smell.description}` at `{smell.file_path}:{smell.line}`. "
+                        "Research existing implementations on GitHub, produce a detailed "
+                        "implementation plan, and open a pull request for human review."
+                    ),
+                    file_path=smell.file_path,
+                    line=smell.line,
+                    context={"feature_description": smell.description},
+                ))
         return tasks
 
     def _test_coverage_tasks(self, snapshot: RepositorySnapshot, seen: set) -> list[MaintenanceTask]:

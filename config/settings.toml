@@ -44,3 +44,13 @@ audit_file = "logs/audit.log"
 output_dir = "reports"
 # How many hours back to look when building the morning report
 lookback_hours = 24
+
+[github]
+# Personal access token with 'repo' scope for GitHub API access.
+# Falls back to the GITHUB_TOKEN environment variable if left empty.
+token = ""
+# Target repository for pull requests in 'owner/repo' format.
+# Example: repo = "myorg/my-repo"
+repo = ""
+# Branch that feature-plan PRs will target (merge base)
+base_branch = "main"
