@@ -97,6 +97,10 @@ def run(
     console.print(f"Repository : {repo_root}")
     console.print(f"Config     : {config_path}")
     console.print(f"Mode       : {'one-shot' if once else 'daemon'}")
+    console.print("")
+    console.print("[bold]Bill:[/bold] Name's Bill. I fix code. "
+                  "You point me at a repo, I find what's broken and I sort it. "
+                  "Terrance handles the paperwork — I handle the work.")
 
     from agent.scheduler import MaintenanceScheduler
     scheduler = MaintenanceScheduler(config, repo_root)

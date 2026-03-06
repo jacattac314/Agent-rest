@@ -40,6 +40,7 @@ except ImportError:
     AGENT_SDK_AVAILABLE = False
 
 from .identifier import MaintenanceTask, TaskKind
+from . import bill as Bill
 
 logger = logging.getLogger(__name__)
 
@@ -153,6 +154,8 @@ class TaskExecutor:
                 files_modified.append(fp)
             return {}
 
+        print(Bill.task_start(task.kind.value, task.title, task.file_path))
+
         prompt = _build_prompt(task, repo_root)
         options = ClaudeAgentOptions(
             cwd=repo_root,
@@ -177,6 +180,7 @@ class TaskExecutor:
             result.success = False
             result.error = str(exc)
             logger.exception("Agent SDK execution failed for task %s", task.id)
+            print(Bill.task_finish(task.kind.value, False, [], error=str(exc)))
             return result
 
         result.success = True
@@ -188,4 +192,5 @@ class TaskExecutor:
             task.id,
             len(files_modified),
         )
+        print(Bill.task_finish(task.kind.value, True, files_modified, summary=result.summary))
         return result

@@ -28,6 +28,7 @@ from .git_integration import CommitInfo, GitIntegration
 from .identifier import MaintenanceTask, TaskIdentifier
 from .prioritizer import TaskPrioritizer
 from .scanner import RepositoryScanner, RepositorySnapshot
+from . import bill as Bill
 
 logger = logging.getLogger(__name__)
 
@@ -102,6 +103,16 @@ class MaintenanceCycle:
             len(deferred),
         )
 
+        # Bill announces what he's about to work on
+        if approved:
+            print(Bill.cycle_start(self.repo_root, len(approved)))
+        else:
+            print(Bill.nothing_to_do())
+
+        # Announce deferred tasks that Bill refuses to touch
+        for dt in deferred:
+            print(Bill.deferred_task(dt.title, dt.risk_score))
+
         # Update living backlog — all non-deferred tasks are pending (including
         # those below the impact threshold or beyond this cycle's cap)
         all_pending = [t for t in tasks if t.risk_score < self.human_review_min_risk]
@@ -152,6 +163,13 @@ class MaintenanceCycle:
             }
             self.audit.log(record)
             results.append(record)
+
+        # Bill wraps up the cycle
+        print(Bill.cycle_end(
+            succeeded=sum(1 for r in results if r["success"]),
+            failed=sum(1 for r in results if not r["success"]),
+            deferred=len(deferred),
+        ))
 
         cycle_summary = {
             "cycle_start": cycle_start.isoformat(),
