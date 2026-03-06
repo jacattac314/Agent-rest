@@ -305,6 +305,30 @@ def backlog(
             )
         console.print(t)
 
+    if show_done:
+        done_tasks = [
+            e for e in bm.all_tasks()
+            if e["status"] == "done"
+            and (repo_filter is None or e["repo"] == repo_filter)
+        ]
+        if done_tasks:
+            console.print("\n[bold cyan]Completed[/bold cyan]")
+            t = Table(show_header=True, header_style="bold cyan")
+            t.add_column("Completed", width=10)
+            t.add_column("Kind", width=22)
+            t.add_column("Title")
+            t.add_column("Branch")
+            for task in sorted(done_tasks, key=lambda x: x.get("completed_at") or "", reverse=True)[:20]:
+                completed = (task.get("completed_at") or "")[:10]
+                branch = (task.get("branch") or "—").split("/")[-1][:28]
+                t.add_row(
+                    completed,
+                    task["kind"].replace("_", " ").title(),
+                    task["title"][:55],
+                    branch,
+                )
+            console.print(t)
+
     if not pending and not deferred:
         console.print("\n[dim]No tasks in the backlog yet. Run the agent to populate it.[/dim]")
 

@@ -20,7 +20,7 @@ from __future__ import annotations
 import json
 import logging
 import os
-from datetime import datetime, timezone, timedelta
+from datetime import datetime
 from pathlib import Path
 
 from .executor import ExecutionResult, TaskExecutor
@@ -102,8 +102,10 @@ class MaintenanceCycle:
             len(deferred),
         )
 
-        # Update living backlog with current task state
-        self.backlog.sync_identified(self.repo_root, approved, deferred)
+        # Update living backlog — all non-deferred tasks are pending (including
+        # those below the impact threshold or beyond this cycle's cap)
+        all_pending = [t for t in tasks if t.risk_score < self.human_review_min_risk]
+        self.backlog.sync_identified(self.repo_root, all_pending, deferred)
 
         # Phase 5-6: Execute & commit
         results: list[dict] = []

@@ -166,13 +166,9 @@ def generate_report(
     # Backlog section
     try:
         from .backlog import BacklogManager
-        import os
-        backlog_file = os.path.join(
-            os.path.dirname(audit_file).replace("logs", "reports"),
-            "terrance_backlog.json",
-        )
-        # Normalize: if audit_file is "logs/audit.log", look in "reports/"
-        backlog_path = audit_file.replace("logs/audit.log", "reports/terrance_backlog.json")
+        from pathlib import Path as _Path
+        _out = output_dir or "reports"
+        backlog_path = str(_Path(_out) / "terrance_backlog.json")
         bm = BacklogManager(backlog_path)
         bsummary = bm.get_summary()
         by_status = bsummary.get("by_status", {})
