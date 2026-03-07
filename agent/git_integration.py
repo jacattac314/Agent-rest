@@ -84,6 +84,9 @@ class GitIntegration:
         branch_name = f"{self.branch_prefix}/{slug}-{ts}"
 
         try:
+            # Save original branch before switching so we can restore it on rollback
+            original_branch = repo.active_branch
+
             # Create and checkout a new branch from current HEAD
             new_branch = repo.create_head(branch_name)
             new_branch.checkout()
@@ -95,7 +98,7 @@ class GitIntegration:
             ]
             if not existing:
                 logger.info("No existing modified files to stage for task %s", task_id)
-                repo.heads[repo.active_branch.name].checkout()  # switch back
+                original_branch.checkout()
                 repo.delete_head(branch_name, force=True)
                 return None
 
@@ -104,7 +107,7 @@ class GitIntegration:
             # Check if there's actually a diff staged
             if not repo.index.diff("HEAD") and not repo.untracked_files:
                 logger.info("Nothing staged for task %s", task_id)
-                repo.heads[repo.active_branch.name].checkout()
+                original_branch.checkout()
                 repo.delete_head(branch_name, force=True)
                 return None
 

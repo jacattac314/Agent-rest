@@ -129,9 +129,7 @@ class TaskExecutor:
 
     def execute(self, task: MaintenanceTask, repo_root: str) -> ExecutionResult:
         """Blocking wrapper around the async _run coroutine."""
-        return anyio.from_thread.run_sync(
-            lambda: anyio.run(self._run, task, repo_root)
-        ) if False else anyio.run(self._run, task, repo_root)
+        return anyio.run(self._run, task, repo_root)
 
     async def _run(self, task: MaintenanceTask, repo_root: str) -> ExecutionResult:
         result = ExecutionResult(task_id=task.id)
