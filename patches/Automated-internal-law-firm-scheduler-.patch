@@ -1,0 +1,54 @@
+diff --git a/README.md b/README.md
+new file mode 100644
+index 0000000..9c8e037
+--- /dev/null
++++ b/README.md
+@@ -0,0 +1,48 @@
++# Meridian Legal — Claims Automation Platform
++
++An automated internal scheduling and claims management platform for law firms. Provides a browser-based dashboard for managing case queues, claim processing pipelines, and staff workload distribution.
++
++## Features
++
++- Real-time claims queue management with priority routing
++- Automated task assignment and scheduling
++- Case status tracking with audit trail
++- Staff capacity and workload visualisation
++
++## Installation
++
++```bash
++npm install
++```
++
++## Usage
++
++Start the local development server:
++
++```bash
++node server.js
++```
++
++Open your browser at `http://localhost:4321`.
++
++## Testing
++
++End-to-end tests are powered by [Playwright](https://playwright.dev):
++
++```bash
++npm test              # headless
++npm run test:headed   # with browser UI
++npm run test:report   # view last report
++```
++
++## Configuration
++
++| File | Purpose |
++|------|---------|
++| `server.js` | HTTP server (serves `index.html` on port 4321) |
++| `index.html` | Single-page application |
++| `playwright.config.js` | Playwright test configuration |
++
++## License
++
++ISC

@@ -134,7 +134,7 @@ class TaskExecutor:
         ) if False else anyio.run(self._run, task, repo_root)
 
     async def _run(self, task: MaintenanceTask, repo_root: str) -> ExecutionResult:
-        result = ExecutionResult(task_id=task.id)
+        result = ExecutionResult(task_id=task.id, success=False)
 
         if not AGENT_SDK_AVAILABLE:
             result.success = False

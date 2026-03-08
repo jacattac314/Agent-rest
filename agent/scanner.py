@@ -150,6 +150,12 @@ class RepositoryScanner:
     # Internal helpers
     # ------------------------------------------------------------------
 
+    # Manifest filenames that should be scanned regardless of extension filter
+    MANIFEST_NAMES: frozenset[str] = frozenset({
+        "requirements.txt", "package.json", "Cargo.toml",
+        "go.mod", "pyproject.toml", "setup.cfg", "setup.py",
+    })
+
     def _walk(self, root: Path):
         for dirpath, dirnames, filenames in os.walk(root):
             dirnames[:] = [
@@ -158,7 +164,7 @@ class RepositoryScanner:
             ]
             for fname in filenames:
                 fpath = Path(dirpath) / fname
-                if fpath.suffix.lower() in self.include_exts:
+                if fpath.suffix.lower() in self.include_exts or fname in self.MANIFEST_NAMES:
                     yield fpath
 
     def _read(self, path: Path) -> str | None:
