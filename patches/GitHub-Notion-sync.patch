@@ -1,0 +1,1434 @@
+diff --git a/app/config.py b/app/config.py
+index c900f68..cd9ccc8 100644
+--- a/app/config.py
++++ b/app/config.py
+@@ -1,8 +1,10 @@
++"""Config module."""
+ from functools import lru_cache
+ from pydantic_settings import BaseSettings, SettingsConfigDict
+ 
+ 
+ class Settings(BaseSettings):
++    """Settings."""
+     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+ 
+     # Application
+@@ -42,9 +44,11 @@ class Settings(BaseSettings):
+ 
+     @property
+     def is_development(self) -> bool:
++        """Is development."""
+         return self.environment == "development"
+ 
+ 
+ @lru_cache
+ def get_settings() -> Settings:
++    """Get settings."""
+     return Settings()
+diff --git a/app/database.py b/app/database.py
+index 420c7ed..a6adab2 100644
+--- a/app/database.py
++++ b/app/database.py
+@@ -1,3 +1,4 @@
++"""Database module."""
+ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+ from sqlalchemy.pool import NullPool
+ 
+diff --git a/app/main.py b/app/main.py
+index eb88750..c6e8ab3 100644
+--- a/app/main.py
++++ b/app/main.py
+@@ -16,6 +16,11 @@ configure_logging(level="DEBUG" if settings.is_development else "INFO")
+ @asynccontextmanager
+ async def lifespan(app: FastAPI):
+     # Startup
++    """Lifespan.
++
++    Args:
++        app: Description.
++    """
+     yield
+     # Shutdown (close DB connections etc.)
+ 
+@@ -51,4 +56,5 @@ app.mount("/metrics", metrics_app)
+ 
+ @app.get("/health", tags=["health"])
+ async def health_check():
++    """Health check."""
+     return {"status": "ok", "version": "0.1.0"}
+diff --git a/app/models/__init__.py b/app/models/__init__.py
+index 5c831f3..555acf8 100644
+--- a/app/models/__init__.py
++++ b/app/models/__init__.py
+@@ -1,3 +1,4 @@
++"""Package init for models."""
+ from app.models.base import Base
+ from app.models.user import User
+ from app.models.repo import Repo
+diff --git a/app/models/analysis.py b/app/models/analysis.py
+index 483f74d..25691a7 100644
+--- a/app/models/analysis.py
++++ b/app/models/analysis.py
+@@ -1,3 +1,4 @@
++"""Analysis module."""
+ import uuid
+ from typing import Optional
+ 
+@@ -9,6 +10,7 @@ from app.models.base import Base
+ 
+ 
+ class Analysis(Base):
++    """Analysis."""
+     __tablename__ = "analyses"
+ 
+     repo_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("repos.id", ondelete="CASCADE"))
+@@ -31,6 +33,7 @@ class Analysis(Base):
+ 
+ 
+ class RoadmapItem(Base):
++    """Roadmap Item."""
+     __tablename__ = "roadmap_items"
+ 
+     analysis_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("analyses.id", ondelete="CASCADE"))
+@@ -43,6 +46,7 @@ class RoadmapItem(Base):
+ 
+ 
+ class Risk(Base):
++    """Risk."""
+     __tablename__ = "risks"
+ 
+     analysis_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("analyses.id", ondelete="CASCADE"))
+diff --git a/app/models/api_token.py b/app/models/api_token.py
+index a80b236..1018451 100644
+--- a/app/models/api_token.py
++++ b/app/models/api_token.py
+@@ -1,3 +1,4 @@
++"""Api token module."""
+ import uuid
+ from datetime import datetime
+ from typing import Optional
+@@ -10,6 +11,7 @@ from app.models.base import Base
+ 
+ 
+ class ApiToken(Base):
++    """Api Token."""
+     __tablename__ = "api_tokens"
+ 
+     user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"))
+diff --git a/app/models/base.py b/app/models/base.py
+index c6215dd..b34822e 100644
+--- a/app/models/base.py
++++ b/app/models/base.py
+@@ -1,3 +1,4 @@
++"""Base module."""
+ import uuid
+ from datetime import datetime, timezone
+ 
+diff --git a/app/models/issue.py b/app/models/issue.py
+index 7d77a44..7b1440c 100644
+--- a/app/models/issue.py
++++ b/app/models/issue.py
+@@ -1,3 +1,4 @@
++"""Issue module."""
+ import uuid
+ from datetime import datetime
+ from typing import Optional
+@@ -10,6 +11,7 @@ from app.models.base import Base
+ 
+ 
+ class Issue(Base):
++    """Issue."""
+     __tablename__ = "issues"
+ 
+     repo_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("repos.id", ondelete="CASCADE"))
+diff --git a/app/models/notion_page.py b/app/models/notion_page.py
+index b80c807..ddd72a9 100644
+--- a/app/models/notion_page.py
++++ b/app/models/notion_page.py
+@@ -1,3 +1,4 @@
++"""Notion page module."""
+ import uuid
+ from datetime import datetime
+ from typing import Optional
+@@ -10,6 +11,7 @@ from app.models.base import Base
+ 
+ 
+ class NotionPage(Base):
++    """Notion Page."""
+     __tablename__ = "notion_pages"
+ 
+     repo_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("repos.id", ondelete="CASCADE"))
+diff --git a/app/models/repo.py b/app/models/repo.py
+index 1b09a88..2ce15d9 100644
+--- a/app/models/repo.py
++++ b/app/models/repo.py
+@@ -1,3 +1,4 @@
++"""Repo module."""
+ import uuid
+ from datetime import datetime
+ from typing import Optional
+@@ -10,6 +11,7 @@ from app.models.base import Base
+ 
+ 
+ class Repo(Base):
++    """Repo."""
+     __tablename__ = "repos"
+ 
+     user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"))
+diff --git a/app/models/sync_log.py b/app/models/sync_log.py
+index e95e444..1d0cd0e 100644
+--- a/app/models/sync_log.py
++++ b/app/models/sync_log.py
+@@ -1,3 +1,4 @@
++"""Sync log module."""
+ import uuid
+ from typing import Optional
+ 
+@@ -9,6 +10,7 @@ from app.models.base import Base
+ 
+ 
+ class SyncLog(Base):
++    """Sync Log."""
+     __tablename__ = "sync_logs"
+ 
+     repo_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("repos.id", ondelete="CASCADE"))
+diff --git a/app/models/user.py b/app/models/user.py
+index 336cf59..28e7049 100644
+--- a/app/models/user.py
++++ b/app/models/user.py
+@@ -1,3 +1,4 @@
++"""User module."""
+ from typing import Optional
+ 
+ from sqlalchemy import String, Text
+@@ -7,6 +8,7 @@ from app.models.base import Base
+ 
+ 
+ class User(Base):
++    """User."""
+     __tablename__ = "users"
+ 
+     name: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+diff --git a/app/routers/analyses.py b/app/routers/analyses.py
+index 8319dc8..4f68914 100644
+--- a/app/routers/analyses.py
++++ b/app/routers/analyses.py
+@@ -15,6 +15,7 @@ router = APIRouter(prefix="/analyses", tags=["analyses"])
+ 
+ 
+ class AnalysisResponse(BaseModel):
++    """Analysis Response."""
+     id: uuid.UUID
+     repo_id: uuid.UUID
+     description: str | None
+@@ -26,6 +27,7 @@ class AnalysisResponse(BaseModel):
+     metrics: dict | None
+ 
+     class Config:
++        """Config."""
+         from_attributes = True
+ 
+ 
+@@ -63,6 +65,12 @@ async def get_analysis(
+     analysis_id: uuid.UUID,
+     db: Annotated[AsyncSession, Depends(get_db)],
+ ):
++    """Get analysis.
++
++    Args:
++        analysis_id: Description.
++        db: Description.
++    """
+     result = await db.execute(select(Analysis).where(Analysis.id == analysis_id))
+     analysis = result.scalar_one_or_none()
+     if not analysis:
+diff --git a/app/routers/auth.py b/app/routers/auth.py
+index 21eeb0a..7a0f4dc 100644
+--- a/app/routers/auth.py
++++ b/app/routers/auth.py
+@@ -23,6 +23,7 @@ _state_store: dict[str, str] = {}
+ 
+ 
+ class TokenResponse(BaseModel):
++    """Token Response."""
+     access_token: str
+     token_type: str = "bearer"
+     user_id: str
+diff --git a/app/routers/repos.py b/app/routers/repos.py
+index 101e509..6a4e334 100644
+--- a/app/routers/repos.py
++++ b/app/routers/repos.py
+@@ -20,12 +20,14 @@ settings = get_settings()
+ 
+ 
+ class AddRepoRequest(BaseModel):
++    """Add Repo Request."""
+     owner: str
+     repo: str
+     notion_parent_page_id: str
+ 
+ 
+ class RepoResponse(BaseModel):
++    """Repo Response."""
+     id: uuid.UUID
+     full_name: str
+     url: str
+@@ -34,6 +36,7 @@ class RepoResponse(BaseModel):
+     is_active: bool
+ 
+     class Config:
++        """Config."""
+         from_attributes = True
+ 
+ 
+@@ -172,6 +175,13 @@ async def deactivate_repo(
+     current_user_id: Annotated[uuid.UUID, Depends(get_current_user_id)],
+     db: Annotated[AsyncSession, Depends(get_db)],
+ ):
++    """Deactivate repo.
++
++    Args:
++        repo_id: Description.
++        current_user_id: Description.
++        db: Description.
++    """
+     result = await db.execute(
+         select(Repo).where(Repo.id == repo_id, Repo.user_id == current_user_id)
+     )
+diff --git a/app/services/ai_service.py b/app/services/ai_service.py
+index d7eb94f..bfd6ad2 100644
+--- a/app/services/ai_service.py
++++ b/app/services/ai_service.py
+@@ -18,10 +18,21 @@ MAX_FILES_FOR_CONTENT = 20  # max individual files to inline
+ 
+ 
+ def _load_prompt(name: str) -> str:
++    """Load prompt.
++
++    Args:
++        name: Description.
++    """
+     return (PROMPT_DIR / f"{name}.txt").read_text()
+ 
+ 
+ def _truncate(text: str, max_chars: int = MAX_CONTENT_CHARS) -> str:
++    """Truncate.
++
++    Args:
++        text: Description.
++        max_chars: Description.
++    """
+     if len(text) <= max_chars:
+         return text
+     return text[:max_chars] + "\n... [truncated]"
+@@ -34,6 +45,11 @@ def _extract_json(text: str) -> dict:
+ 
+ 
+ def _build_file_tree_text(tree_items: list[dict]) -> str:
++    """Build file tree text.
++
++    Args:
++        tree_items: Description.
++    """
+     lines = []
+     for item in tree_items[:200]:
+         if item.get("type") == "blob":
+@@ -42,6 +58,11 @@ def _build_file_tree_text(tree_items: list[dict]) -> str:
+ 
+ 
+ def _build_file_contents_text(files: dict[str, str]) -> str:
++    """Build file contents text.
++
++    Args:
++        files: Description.
++    """
+     parts = []
+     for path, content in files.items():
+         header = f"\n### {path}\n"
+@@ -53,11 +74,18 @@ class AIService:
+     """Wraps Anthropic Claude API for all AI-driven analysis."""
+ 
+     def __init__(self):
++        """Init."""
+         settings = get_settings()
+         self.client = anthropic.AsyncAnthropic(api_key=settings.anthropic_api_key)
+         self.model = "claude-opus-4-6"
+ 
+     async def _call(self, prompt: str, max_tokens: int = 2048) -> str:
++        """Call.
++
++        Args:
++            prompt: Description.
++            max_tokens: Description.
++        """
+         message = await self.client.messages.create(
+             model=self.model,
+             max_tokens=max_tokens,
+diff --git a/app/services/analysis_service.py b/app/services/analysis_service.py
+index 7d332e4..ef1787b 100644
+--- a/app/services/analysis_service.py
++++ b/app/services/analysis_service.py
+@@ -41,6 +41,12 @@ class AnalysisService:
+     """Combines GitHub API data + LLM analysis into a structured result."""
+ 
+     def __init__(self, github_service: GitHubService, ai_service: AIService):
++        """Init.
++
++        Args:
++            github_service: Description.
++            ai_service: Description.
++        """
+         self.github = github_service
+         self.ai = ai_service
+         self.osv = OSVService()
+@@ -256,6 +262,11 @@ class AnalysisService:
+ 
+     @staticmethod
+     def _extract_todos(key_files: dict[str, str]) -> list[str]:
++        """Extract todos.
++
++        Args:
++            key_files: Description.
++        """
+         todos: list[str] = []
+         for path, content in key_files.items():
+             for match in TODO_PATTERN.finditer(content):
+@@ -299,6 +310,13 @@ class AnalysisService:
+         tree_items: list[dict],
+         key_files: dict[str, str],
+     ) -> str:
++        """Build static notes.
++
++        Args:
++            languages: Description.
++            tree_items: Description.
++            key_files: Description.
++        """
+         paths = [i.get("path", "") for i in tree_items]
+         has_tests = any("test" in p.lower() or "spec" in p.lower() for p in paths)
+         has_ci = any(".github/workflows" in p or ".gitlab-ci" in p for p in paths)
+diff --git a/app/services/github_app_service.py b/app/services/github_app_service.py
+index e45f7cc..49d1212 100644
+--- a/app/services/github_app_service.py
++++ b/app/services/github_app_service.py
+@@ -27,6 +27,7 @@ class GitHubAppService:
+     """Generates installation access tokens for a GitHub App."""
+ 
+     def __init__(self):
++        """Init."""
+         self._settings = get_settings()
+         self._installation_tokens: dict[str, tuple[str, float]] = {}  # install_id → (token, exp)
+ 
+@@ -109,6 +110,11 @@ class GitHubAppService:
+             return resp.json()
+ 
+     async def get_installation(self, installation_id: str) -> dict[str, Any]:
++        """Get installation.
++
++        Args:
++            installation_id: Description.
++        """
+         app_jwt = self._build_app_jwt()
+         async with httpx.AsyncClient(timeout=15.0) as client:
+             resp = await client.get(
+diff --git a/app/services/github_service.py b/app/services/github_service.py
+index 18cee59..095414a 100644
+--- a/app/services/github_service.py
++++ b/app/services/github_service.py
+@@ -16,12 +16,19 @@ GITHUB_ACCEPT = "application/vnd.github+json"
+ 
+ 
+ class GitHubService:
++    """Git Hub Service."""
+     def __init__(self, access_token: str):
++        """Init.
++
++        Args:
++            access_token: Description.
++        """
+         self.access_token = access_token
+         self._client: Optional[httpx.AsyncClient] = None
+ 
+     @property
+     def _headers(self) -> dict[str, str]:
++        """Headers."""
+         return {
+             "Authorization": f"Bearer {self.access_token}",
+             "Accept": GITHUB_ACCEPT,
+@@ -29,11 +36,13 @@ class GitHubService:
+         }
+ 
+     async def _get_client(self) -> httpx.AsyncClient:
++        """Get client."""
+         if self._client is None or self._client.is_closed:
+             self._client = httpx.AsyncClient(headers=self._headers, timeout=30.0)
+         return self._client
+ 
+     async def close(self) -> None:
++        """Close."""
+         if self._client and not self._client.is_closed:
+             await self._client.aclose()
+ 
+@@ -43,6 +52,11 @@ class GitHubService:
+ 
+     @staticmethod
+     def get_oauth_authorize_url(state: str) -> str:
++        """Get oauth authorize url.
++
++        Args:
++            state: Description.
++        """
+         settings = get_settings()
+         params = {
+             "client_id": settings.github_client_id,
+@@ -76,6 +90,7 @@ class GitHubService:
+     # ------------------------------------------------------------------
+ 
+     async def get_authenticated_user(self) -> dict[str, Any]:
++        """Get authenticated user."""
+         client = await self._get_client()
+         resp = await client.get(f"{GITHUB_API_BASE}/user")
+         await raise_for_rate_limit(resp)
+@@ -106,12 +121,24 @@ class GitHubService:
+     # ------------------------------------------------------------------
+ 
+     async def get_repo(self, owner: str, repo: str) -> dict[str, Any]:
++        """Get repo.
++
++        Args:
++            owner: Description.
++            repo: Description.
++        """
+         client = await self._get_client()
+         resp = await client.get(f"{GITHUB_API_BASE}/repos/{owner}/{repo}")
+         await raise_for_rate_limit(resp)
+         return resp.json()
+ 
+     async def get_repo_languages(self, owner: str, repo: str) -> dict[str, int]:
++        """Get repo languages.
++
++        Args:
++            owner: Description.
++            repo: Description.
++        """
+         client = await self._get_client()
+         resp = await client.get(f"{GITHUB_API_BASE}/repos/{owner}/{repo}/languages")
+         await raise_for_rate_limit(resp)
+@@ -175,6 +202,13 @@ class GitHubService:
+     # ------------------------------------------------------------------
+ 
+     async def create_webhook(self, owner: str, repo: str, callback_url: str) -> dict[str, Any]:
++        """Create webhook.
++
++        Args:
++            owner: Description.
++            repo: Description.
++            callback_url: Description.
++        """
+         settings = get_settings()
+         client = await self._get_client()
+         resp = await client.post(
+@@ -218,6 +252,7 @@ class GitHubService:
+     # ------------------------------------------------------------------
+ 
+     async def get_rate_limit(self) -> dict[str, Any]:
++        """Get rate limit."""
+         client = await self._get_client()
+         resp = await client.get(f"{GITHUB_API_BASE}/rate_limit")
+         resp.raise_for_status()
+diff --git a/app/services/notion_service.py b/app/services/notion_service.py
+index 025222d..9cd694a 100644
+--- a/app/services/notion_service.py
++++ b/app/services/notion_service.py
+@@ -10,12 +10,19 @@ NOTION_API_BASE = "https://api.notion.com/v1"
+ 
+ 
+ class NotionService:
++    """Notion Service."""
+     def __init__(self, access_token: str):
++        """Init.
++
++        Args:
++            access_token: Description.
++        """
+         self.access_token = access_token
+         self._client: Optional[httpx.AsyncClient] = None
+ 
+     @property
+     def _headers(self) -> dict[str, str]:
++        """Headers."""
+         settings = get_settings()
+         return {
+             "Authorization": f"Bearer {self.access_token}",
+@@ -24,11 +31,13 @@ class NotionService:
+         }
+ 
+     async def _get_client(self) -> httpx.AsyncClient:
++        """Get client."""
+         if self._client is None or self._client.is_closed:
+             self._client = httpx.AsyncClient(headers=self._headers, timeout=30.0)
+         return self._client
+ 
+     async def close(self) -> None:
++        """Close."""
+         if self._client and not self._client.is_closed:
+             await self._client.aclose()
+ 
+@@ -38,6 +47,11 @@ class NotionService:
+ 
+     @staticmethod
+     def get_oauth_authorize_url(state: str) -> str:
++        """Get oauth authorize url.
++
++        Args:
++            state: Description.
++        """
+         settings = get_settings()
+         params = (
+             f"owner=user"
+@@ -105,12 +119,23 @@ class NotionService:
+         return resp.json()
+ 
+     async def update_page(self, page_id: str, properties: dict) -> dict[str, Any]:
++        """Update page.
++
++        Args:
++            page_id: Description.
++            properties: Description.
++        """
+         client = await self._get_client()
+         resp = await client.patch(f"{NOTION_API_BASE}/pages/{page_id}", json={"properties": properties})
+         await raise_for_rate_limit(resp)
+         return resp.json()
+ 
+     async def get_page(self, page_id: str) -> dict[str, Any]:
++        """Get page.
++
++        Args:
++            page_id: Description.
++        """
+         client = await self._get_client()
+         resp = await client.get(f"{NOTION_API_BASE}/pages/{page_id}")
+         await raise_for_rate_limit(resp)
+@@ -174,6 +199,12 @@ class NotionService:
+ 
+     @staticmethod
+     def heading_block(text: str, level: int = 2) -> dict:
++        """Heading block.
++
++        Args:
++            text: Description.
++            level: Description.
++        """
+         key = f"heading_{level}"
+         return {
+             "object": "block",
+@@ -185,6 +216,11 @@ class NotionService:
+ 
+     @staticmethod
+     def paragraph_block(text: str) -> dict:
++        """Paragraph block.
++
++        Args:
++            text: Description.
++        """
+         return {
+             "object": "block",
+             "type": "paragraph",
+@@ -195,10 +231,16 @@ class NotionService:
+ 
+     @staticmethod
+     def divider_block() -> dict:
++        """Divider block."""
+         return {"object": "block", "type": "divider", "divider": {}}
+ 
+     @staticmethod
+     def bulleted_list_item(text: str) -> dict:
++        """Bulleted list item.
++
++        Args:
++            text: Description.
++        """
+         return {
+             "object": "block",
+             "type": "bulleted_list_item",
+@@ -213,6 +255,7 @@ class NotionService:
+ 
+     @staticmethod
+     def roadmap_db_schema() -> dict:
++        """Roadmap db schema."""
+         return {
+             "Name": {"title": {}},
+             "Quarter": {
+@@ -239,6 +282,7 @@ class NotionService:
+ 
+     @staticmethod
+     def backlog_db_schema() -> dict:
++        """Backlog db schema."""
+         return {
+             "Name": {"title": {}},
+             "Type": {
+@@ -272,6 +316,7 @@ class NotionService:
+ 
+     @staticmethod
+     def risks_db_schema() -> dict:
++        """Risks db schema."""
+         return {
+             "Issue": {"title": {}},
+             "Severity": {
+diff --git a/app/services/sync_service.py b/app/services/sync_service.py
+index 9b349ed..4ceb4a7 100644
+--- a/app/services/sync_service.py
++++ b/app/services/sync_service.py
+@@ -14,6 +14,11 @@ class SyncService:
+     """Creates and updates Notion content from RepoPilot analysis results."""
+ 
+     def __init__(self, notion_service: NotionService):
++        """Init.
++
++        Args:
++            notion_service: Description.
++        """
+         self.notion = notion_service
+ 
+     async def create_project_workspace(
+@@ -115,6 +120,12 @@ class SyncService:
+     async def _create_overview_page(
+         self, parent_page_id: str, analysis_result: dict[str, Any]
+     ) -> dict[str, Any]:
++        """Create overview page.
++
++        Args:
++            parent_page_id: Description.
++            analysis_result: Description.
++        """
+         full_name = analysis_result["full_name"]
+         owner, repo = (full_name.split("/", 1) + [""])[:2]
+ 
+@@ -174,6 +185,12 @@ class SyncService:
+         return page
+ 
+     async def _update_overview_page(self, page_id: str, analysis_result: dict[str, Any]) -> None:
++        """Update overview page.
++
++        Args:
++            page_id: Description.
++            analysis_result: Description.
++        """
+         full_name = analysis_result["full_name"]
+         await self.notion.update_page(
+             page_id,
+@@ -217,6 +234,12 @@ class SyncService:
+                     logger.warning("Failed to add roadmap item '%s': %s", task[:60], exc)
+ 
+     async def _populate_backlog(self, db_id: str, issues: list[dict]) -> None:
++        """Populate backlog.
++
++        Args:
++            db_id: Description.
++            issues: Description.
++        """
+         for issue in issues[:100]:
+             title = issue.get("title", "Untitled")[:255]
+             is_pr = "pull_request" in issue
+diff --git a/app/tasks/ingestion.py b/app/tasks/ingestion.py
+index 59c0f23..8f61d89 100644
+--- a/app/tasks/ingestion.py
++++ b/app/tasks/ingestion.py
+@@ -25,6 +25,14 @@ _session_factory = async_sessionmaker(_engine, expire_on_commit=False)
+ 
+ 
+ async def _run_full_analysis(repo_id: str, github_token: str, notion_token: str, notion_parent_page_id: str) -> None:
++    """Run full analysis.
++
++    Args:
++        repo_id: Description.
++        github_token: Description.
++        notion_token: Description.
++        notion_parent_page_id: Description.
++    """
+     async with _session_factory() as session:
+         # Load repo
+         from sqlalchemy import select
+diff --git a/app/tasks/sync.py b/app/tasks/sync.py
+index 9392101..a2a2193 100644
+--- a/app/tasks/sync.py
++++ b/app/tasks/sync.py
+@@ -25,6 +25,14 @@ _session_factory = async_sessionmaker(_engine, expire_on_commit=False)
+ 
+ 
+ async def _sync_repo(repo_id: str, commit_sha: str, trigger: str, before_sha: str = "") -> None:
++    """Sync repo.
++
++    Args:
++        repo_id: Description.
++        commit_sha: Description.
++        trigger: Description.
++        before_sha: Description.
++    """
+     async with _session_factory() as session:
+         # Load repo with tokens
+         result = await session.execute(
+@@ -166,6 +174,13 @@ async def _sync_repo(repo_id: str, commit_sha: str, trigger: str, before_sha: st
+     default_retry_delay=30,
+ )
+ def sync_repo_on_push(self, repo_id: str, commit_sha: str, before_sha: str = "") -> None:
++    """Sync repo on push.
++
++    Args:
++        repo_id: Description.
++        commit_sha: Description.
++        before_sha: Description.
++    """
+     try:
+         asyncio.run(_sync_repo(repo_id, commit_sha, trigger="webhook", before_sha=before_sha))
+     except Exception as exc:
+@@ -177,6 +192,7 @@ def resync_all_repos() -> None:
+     """Nightly task: re-analyse all active repos."""
+ 
+     async def _run() -> None:
++        """Run."""
+         async with _session_factory() as session:
+             result = await session.execute(select(Repo).where(Repo.is_active == True))  # noqa: E712
+             repos = result.scalars().all()
+diff --git a/app/utils/cache.py b/app/utils/cache.py
+index b3c52aa..7476220 100644
+--- a/app/utils/cache.py
++++ b/app/utils/cache.py
+@@ -13,6 +13,7 @@ _redis: Optional[aioredis.Redis] = None
+ 
+ 
+ def _get_redis() -> aioredis.Redis:
++    """Get redis."""
+     global _redis
+     if _redis is None:
+         settings = get_settings()
+@@ -21,6 +22,12 @@ def _get_redis() -> aioredis.Redis:
+ 
+ 
+ def _cache_key(url: str, params: dict | None = None) -> str:
++    """Cache key.
++
++    Args:
++        url: Description.
++        params: Description.
++    """
+     raw = url + json.dumps(params or {}, sort_keys=True)
+     return "gh_cache:" + hashlib.sha256(raw.encode()).hexdigest()
+ 
+@@ -56,6 +63,7 @@ async def set_cached(
+ 
+ 
+ async def close() -> None:
++    """Close."""
+     global _redis
+     if _redis:
+         await _redis.aclose()
+diff --git a/app/utils/jwt_auth.py b/app/utils/jwt_auth.py
+index 43676b6..bab1e89 100644
+--- a/app/utils/jwt_auth.py
++++ b/app/utils/jwt_auth.py
+@@ -16,6 +16,11 @@ _bearer = HTTPBearer(auto_error=False)
+ 
+ 
+ def create_access_token(user_id: uuid.UUID) -> str:
++    """Create access token.
++
++    Args:
++        user_id: Description.
++    """
+     settings = get_settings()
+     payload = {
+         "sub": str(user_id),
+@@ -26,6 +31,11 @@ def create_access_token(user_id: uuid.UUID) -> str:
+ 
+ 
+ def decode_access_token(token: str) -> dict:
++    """Decode access token.
++
++    Args:
++        token: Description.
++    """
+     settings = get_settings()
+     return jwt.decode(token, settings.app_secret_key, algorithms=[ALGORITHM])
+ 
+diff --git a/app/utils/logging.py b/app/utils/logging.py
+index 48696fc..930c552 100644
+--- a/app/utils/logging.py
++++ b/app/utils/logging.py
+@@ -6,6 +6,11 @@ import structlog
+ 
+ 
+ def configure_logging(level: str = "INFO") -> None:
++    """Configure logging.
++
++    Args:
++        level: Description.
++    """
+     structlog.configure(
+         processors=[
+             structlog.contextvars.merge_contextvars,
+diff --git a/app/utils/security.py b/app/utils/security.py
+index 18b577c..bd5ac55 100644
+--- a/app/utils/security.py
++++ b/app/utils/security.py
+@@ -8,6 +8,7 @@ from app.config import get_settings
+ 
+ 
+ def _get_fernet() -> Fernet:
++    """Get fernet."""
+     settings = get_settings()
+     key = settings.token_encryption_key
+     if not key:
+diff --git a/tests/conftest.py b/tests/conftest.py
+index 0acc6f6..d76fbac 100644
+--- a/tests/conftest.py
++++ b/tests/conftest.py
+@@ -8,6 +8,7 @@ from app.main import app
+ 
+ @pytest.fixture(scope="session")
+ def anyio_backend():
++    """Anyio backend."""
+     return "asyncio"
+ 
+ 
+diff --git a/tests/test_ai_service.py b/tests/test_ai_service.py
+index 454494d..1c61c90 100644
+--- a/tests/test_ai_service.py
++++ b/tests/test_ai_service.py
+@@ -8,28 +8,33 @@ from app.services.ai_service import AIService, _extract_json, _truncate
+ 
+ 
+ def test_extract_json_clean():
++    """Test extract json clean."""
+     raw = '{"key": "value"}'
+     result = _extract_json(raw)
+     assert result == {"key": "value"}
+ 
+ 
+ def test_extract_json_with_fences():
++    """Test extract json with fences."""
+     raw = "```json\n{\"key\": \"value\"}\n```"
+     result = _extract_json(raw)
+     assert result == {"key": "value"}
+ 
+ 
+ def test_extract_json_invalid_raises():
++    """Test extract json invalid raises."""
+     with pytest.raises((json.JSONDecodeError, ValueError)):
+         _extract_json("not valid json at all")
+ 
+ 
+ def test_truncate_short_text():
++    """Test truncate short text."""
+     text = "hello"
+     assert _truncate(text, 100) == "hello"
+ 
+ 
+ def test_truncate_long_text():
++    """Test truncate long text."""
+     text = "x" * 1000
+     result = _truncate(text, 500)
+     assert len(result) <= 520
+@@ -38,6 +43,7 @@ def test_truncate_long_text():
+ 
+ @pytest.mark.asyncio
+ async def test_summarize_repo_success():
++    """Test summarize repo success."""
+     mock_response = MagicMock()
+     mock_response.content = [MagicMock(text=json.dumps({
+         "description": "A test service",
+@@ -89,6 +95,7 @@ async def test_summarize_repo_fallback_on_bad_json():
+ 
+ @pytest.mark.asyncio
+ async def test_generate_roadmap():
++    """Test generate roadmap."""
+     mock_response = MagicMock()
+     mock_response.content = [MagicMock(text=json.dumps({
+         "Q1": ["Add tests", "Refactor auth"],
+@@ -116,6 +123,7 @@ async def test_generate_roadmap():
+ 
+ @pytest.mark.asyncio
+ async def test_identify_risks():
++    """Test identify risks."""
+     mock_response = MagicMock()
+     mock_response.content = [MagicMock(text=json.dumps({
+         "risks": [
+@@ -141,6 +149,7 @@ async def test_identify_risks():
+ 
+ 
+ def test_validate_tech_stack():
++    """Test validate tech stack."""
+     service = AIService.__new__(AIService)
+     result = service.validate_tech_stack(
+         llm_stack=["Python", "FastAPI", "PostgreSQL"],
+diff --git a/tests/test_analysis_service.py b/tests/test_analysis_service.py
+index ff92d5e..de9306c 100644
+--- a/tests/test_analysis_service.py
++++ b/tests/test_analysis_service.py
+@@ -5,6 +5,7 @@ from app.services.analysis_service import AnalysisService, TODO_PATTERN
+ 
+ 
+ def test_extract_todos():
++    """Test extract todos."""
+     files = {
+         "app/main.py": "# TODO: refactor this\nprint('hello')\n# FIXME: broken",
+         "app/utils.py": "x = 1  # nothing here",
+@@ -16,12 +17,14 @@ def test_extract_todos():
+ 
+ def test_extract_todos_limit():
+     # Should cap at 50
++    """Test extract todos limit."""
+     files = {f"file{i}.py": f"# TODO: task {i}" for i in range(100)}
+     todos = AnalysisService._extract_todos(files)
+     assert len(todos) <= 50
+ 
+ 
+ def test_parse_dependencies_requirements_txt():
++    """Test parse dependencies requirements txt."""
+     files = {
+         "requirements.txt": "fastapi==0.100.0\nhttpx>=0.28\ncelery",
+     }
+@@ -33,6 +36,7 @@ def test_parse_dependencies_requirements_txt():
+ 
+ 
+ def test_parse_dependencies_package_json():
++    """Test parse dependencies package json."""
+     files = {
+         "package.json": '{"dependencies": {"react": "^18.0.0", "axios": "1.0.0"}}',
+     }
+@@ -42,12 +46,14 @@ def test_parse_dependencies_package_json():
+ 
+ 
+ def test_build_static_notes_no_tests():
++    """Test build static notes no tests."""
+     tree_items = [{"type": "blob", "path": "app/main.py"}]
+     notes = AnalysisService._build_static_notes({"Python": 10000}, tree_items, {})
+     assert "test" in notes.lower()
+ 
+ 
+ def test_build_static_notes_with_tests():
++    """Test build static notes with tests."""
+     tree_items = [
+         {"type": "blob", "path": "app/main.py"},
+         {"type": "blob", "path": "tests/test_main.py"},
+@@ -57,6 +63,7 @@ def test_build_static_notes_with_tests():
+ 
+ 
+ def test_complexity_score_small_repo():
++    """Test complexity score small repo."""
+     tree_items = [{"type": "blob", "path": f"file{i}.py"} for i in range(10)]
+     score = AnalysisService._complexity_score(tree_items, {"Python": 10000})
+     assert 0.0 <= score <= 1.0
+@@ -64,12 +71,14 @@ def test_complexity_score_small_repo():
+ 
+ 
+ def test_complexity_score_large_repo():
++    """Test complexity score large repo."""
+     tree_items = [{"type": "blob", "path": f"file{i}.py"} for i in range(600)]
+     score = AnalysisService._complexity_score(tree_items, {"Python": 1, "JS": 1, "Go": 1, "Rust": 1})
+     assert score > 0.5
+ 
+ 
+ def test_todo_pattern():
++    """Test todo pattern."""
+     text = "# TODO: fix this now\n# FIXME: also this"
+     matches = list(TODO_PATTERN.finditer(text))
+     assert len(matches) == 2
+@@ -77,6 +86,7 @@ def test_todo_pattern():
+ 
+ 
+ def test_todo_pattern_case_insensitive():
++    """Test todo pattern case insensitive."""
+     text = "# todo: lowercase todo"
+     matches = list(TODO_PATTERN.finditer(text))
+     assert len(matches) == 1
+diff --git a/tests/test_cache.py b/tests/test_cache.py
+index b1a8d06..af8d48d 100644
+--- a/tests/test_cache.py
++++ b/tests/test_cache.py
+@@ -8,6 +8,7 @@ from app.utils.cache import _cache_key, get_cached, set_cached
+ 
+ 
+ def test_cache_key_deterministic():
++    """Test cache key deterministic."""
+     k1 = _cache_key("https://example.com/api", {"a": 1})
+     k2 = _cache_key("https://example.com/api", {"a": 1})
+     assert k1 == k2
+@@ -15,12 +16,14 @@ def test_cache_key_deterministic():
+ 
+ 
+ def test_cache_key_differs_on_url():
++    """Test cache key differs on url."""
+     k1 = _cache_key("https://example.com/a")
+     k2 = _cache_key("https://example.com/b")
+     assert k1 != k2
+ 
+ 
+ def test_cache_key_differs_on_params():
++    """Test cache key differs on params."""
+     k1 = _cache_key("https://example.com/api", {"page": 1})
+     k2 = _cache_key("https://example.com/api", {"page": 2})
+     assert k1 != k2
+@@ -28,6 +31,7 @@ def test_cache_key_differs_on_params():
+ 
+ @pytest.mark.asyncio
+ async def test_get_cached_miss():
++    """Test get cached miss."""
+     mock_redis = AsyncMock()
+     mock_redis.get = AsyncMock(return_value=None)
+     with patch("app.utils.cache._get_redis", return_value=mock_redis):
+@@ -38,6 +42,7 @@ async def test_get_cached_miss():
+ 
+ @pytest.mark.asyncio
+ async def test_get_cached_hit():
++    """Test get cached hit."""
+     stored = json.dumps({"etag": '"abc123"', "body": {"data": "value"}})
+     mock_redis = AsyncMock()
+     mock_redis.get = AsyncMock(return_value=stored)
+@@ -49,6 +54,7 @@ async def test_get_cached_hit():
+ 
+ @pytest.mark.asyncio
+ async def test_set_cached_stores_correctly():
++    """Test set cached stores correctly."""
+     mock_redis = AsyncMock()
+     mock_redis.setex = AsyncMock()
+     with patch("app.utils.cache._get_redis", return_value=mock_redis):
+@@ -63,6 +69,7 @@ async def test_set_cached_stores_correctly():
+ 
+ @pytest.mark.asyncio
+ async def test_get_cached_handles_redis_error():
++    """Test get cached handles redis error."""
+     mock_redis = AsyncMock()
+     mock_redis.get = AsyncMock(side_effect=Exception("Redis down"))
+     with patch("app.utils.cache._get_redis", return_value=mock_redis):
+@@ -73,6 +80,7 @@ async def test_get_cached_handles_redis_error():
+ 
+ @pytest.mark.asyncio
+ async def test_set_cached_handles_redis_error():
++    """Test set cached handles redis error."""
+     mock_redis = AsyncMock()
+     mock_redis.setex = AsyncMock(side_effect=Exception("Redis down"))
+     with patch("app.utils.cache._get_redis", return_value=mock_redis):
+diff --git a/tests/test_github_app_service.py b/tests/test_github_app_service.py
+index df531e6..7f55030 100644
+--- a/tests/test_github_app_service.py
++++ b/tests/test_github_app_service.py
+@@ -43,6 +43,11 @@ def test_expired_token_triggers_refresh():
+ 
+ 
+ def test_build_app_jwt_missing_key_raises(tmp_path):
++    """Test build app jwt missing key raises.
++
++    Args:
++        tmp_path: Description.
++    """
+     svc = GitHubAppService()
+     with patch.object(svc._settings, "github_app_private_key_path", str(tmp_path / "nonexistent.pem")):
+         with pytest.raises(FileNotFoundError):
+@@ -51,6 +56,7 @@ def test_build_app_jwt_missing_key_raises(tmp_path):
+ 
+ @pytest.mark.asyncio
+ async def test_list_installations():
++    """Test list installations."""
+     svc = GitHubAppService()
+     with respx.mock:
+         respx.get("https://api.github.com/app/installations").mock(
+diff --git a/tests/test_github_service.py b/tests/test_github_service.py
+index 4cee9e5..7911f18 100644
+--- a/tests/test_github_service.py
++++ b/tests/test_github_service.py
+@@ -11,6 +11,7 @@ from app.services.github_service import GitHubService, GITHUB_API_BASE
+ 
+ @pytest.mark.asyncio
+ async def test_get_authenticated_user():
++    """Test get authenticated user."""
+     with respx.mock:
+         respx.get(f"{GITHUB_API_BASE}/user").mock(
+             return_value=Response(200, json={"id": 1, "login": "testuser", "name": "Test User"})
+@@ -23,6 +24,7 @@ async def test_get_authenticated_user():
+ 
+ @pytest.mark.asyncio
+ async def test_get_repo():
++    """Test get repo."""
+     with respx.mock:
+         respx.get(f"{GITHUB_API_BASE}/repos/owner/repo").mock(
+             return_value=Response(
+@@ -44,6 +46,7 @@ async def test_get_repo():
+ 
+ @pytest.mark.asyncio
+ async def test_get_repo_languages():
++    """Test get repo languages."""
+     with respx.mock:
+         respx.get(f"{GITHUB_API_BASE}/repos/owner/repo/languages").mock(
+             return_value=Response(200, json={"Python": 10000, "JavaScript": 2000})
+@@ -56,6 +59,7 @@ async def test_get_repo_languages():
+ 
+ @pytest.mark.asyncio
+ async def test_list_issues_pagination():
++    """Test list issues pagination."""
+     with respx.mock:
+         respx.get(f"{GITHUB_API_BASE}/repos/owner/repo/issues").mock(
+             side_effect=[
+@@ -71,6 +75,7 @@ async def test_list_issues_pagination():
+ 
+ 
+ def test_verify_webhook_signature_valid():
++    """Test verify webhook signature valid."""
+     secret = "mysecret"
+     payload = b'{"event": "push"}'
+     sig = "sha256=" + hmac.new(secret.encode(), payload, hashlib.sha256).hexdigest()
+@@ -83,6 +88,7 @@ def test_verify_webhook_signature_valid():
+ 
+ 
+ def test_verify_webhook_signature_invalid():
++    """Test verify webhook signature invalid."""
+     import unittest.mock
+     with unittest.mock.patch("app.services.github_service.get_settings") as mock_settings:
+         mock_settings.return_value.github_webhook_secret = "correct-secret"
+@@ -91,6 +97,7 @@ def test_verify_webhook_signature_invalid():
+ 
+ 
+ def test_verify_webhook_signature_missing_prefix():
++    """Test verify webhook signature missing prefix."""
+     import unittest.mock
+     with unittest.mock.patch("app.services.github_service.get_settings") as mock_settings:
+         mock_settings.return_value.github_webhook_secret = "secret"
+diff --git a/tests/test_health.py b/tests/test_health.py
+index 864653b..f006feb 100644
+--- a/tests/test_health.py
++++ b/tests/test_health.py
+@@ -8,6 +8,7 @@ from app.main import app
+ 
+ @pytest.mark.asyncio
+ async def test_health_check():
++    """Test health check."""
+     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+         response = await client.get("/health")
+     assert response.status_code == 200
+diff --git a/tests/test_jwt_auth.py b/tests/test_jwt_auth.py
+index f6e31d0..ba32202 100644
+--- a/tests/test_jwt_auth.py
++++ b/tests/test_jwt_auth.py
+@@ -10,6 +10,7 @@ from app.utils.jwt_auth import create_access_token, decode_access_token, get_cur
+ 
+ 
+ def test_create_and_decode_token():
++    """Test create and decode token."""
+     user_id = uuid.uuid4()
+     token = create_access_token(user_id)
+     assert isinstance(token, str)
+@@ -35,6 +36,7 @@ def test_expired_token_raises():
+ 
+ @pytest.mark.asyncio
+ async def test_get_current_user_id_valid():
++    """Test get current user id valid."""
+     user_id = uuid.uuid4()
+     token = create_access_token(user_id)
+     creds = HTTPAuthorizationCredentials(scheme="Bearer", credentials=token)
+@@ -44,6 +46,7 @@ async def test_get_current_user_id_valid():
+ 
+ @pytest.mark.asyncio
+ async def test_get_current_user_id_no_credentials():
++    """Test get current user id no credentials."""
+     with pytest.raises(HTTPException) as exc_info:
+         await get_current_user_id(None)
+     assert exc_info.value.status_code == 401
+@@ -51,6 +54,7 @@ async def test_get_current_user_id_no_credentials():
+ 
+ @pytest.mark.asyncio
+ async def test_get_current_user_id_invalid_token():
++    """Test get current user id invalid token."""
+     creds = HTTPAuthorizationCredentials(scheme="Bearer", credentials="not.a.valid.jwt")
+     with pytest.raises(HTTPException) as exc_info:
+         await get_current_user_id(creds)
+diff --git a/tests/test_mermaid.py b/tests/test_mermaid.py
+index 1eb7db7..89e51ad 100644
+--- a/tests/test_mermaid.py
++++ b/tests/test_mermaid.py
+@@ -9,6 +9,7 @@ from app.services.ai_service import AIService
+ 
+ @pytest.mark.asyncio
+ async def test_generate_mermaid_diagram_clean_output():
++    """Test generate mermaid diagram clean output."""
+     raw_diagram = "graph TD\n    A[API] --> B[DB]\n    A --> C[Cache]"
+     mock_response = MagicMock()
+     mock_response.content = [MagicMock(text=raw_diagram)]
+@@ -31,6 +32,7 @@ async def test_generate_mermaid_diagram_clean_output():
+ 
+ @pytest.mark.asyncio
+ async def test_generate_mermaid_strips_fences():
++    """Test generate mermaid strips fences."""
+     raw = "```mermaid\ngraph TD\n    X --> Y\n```"
+     mock_response = MagicMock()
+     mock_response.content = [MagicMock(text=raw)]
+diff --git a/tests/test_notion_service.py b/tests/test_notion_service.py
+index 5e52d2a..c2517de 100644
+--- a/tests/test_notion_service.py
++++ b/tests/test_notion_service.py
+@@ -8,6 +8,7 @@ from app.services.notion_service import NotionService, NOTION_API_BASE
+ 
+ @pytest.mark.asyncio
+ async def test_create_page():
++    """Test create page."""
+     with respx.mock:
+         respx.post(f"{NOTION_API_BASE}/pages").mock(
+             return_value=Response(
+@@ -30,6 +31,7 @@ async def test_create_page():
+ 
+ @pytest.mark.asyncio
+ async def test_create_database():
++    """Test create database."""
+     with respx.mock:
+         respx.post(f"{NOTION_API_BASE}/databases").mock(
+             return_value=Response(
+@@ -49,6 +51,7 @@ async def test_create_database():
+ 
+ @pytest.mark.asyncio
+ async def test_append_block_children():
++    """Test append block children."""
+     with respx.mock:
+         respx.patch(f"{NOTION_API_BASE}/blocks/block-id/children").mock(
+             return_value=Response(200, json={"results": []})
+@@ -64,6 +67,7 @@ async def test_append_block_children():
+ 
+ @pytest.mark.asyncio
+ async def test_query_database_pagination():
++    """Test query database pagination."""
+     with respx.mock:
+         respx.post(f"{NOTION_API_BASE}/databases/db-1/query").mock(
+             side_effect=[
+@@ -92,18 +96,21 @@ async def test_query_database_pagination():
+ 
+ 
+ def test_heading_block():
++    """Test heading block."""
+     block = NotionService.heading_block("Hello", level=2)
+     assert block["type"] == "heading_2"
+     assert block["heading_2"]["rich_text"][0]["text"]["content"] == "Hello"
+ 
+ 
+ def test_paragraph_block_truncation():
++    """Test paragraph block truncation."""
+     long_text = "x" * 3000
+     block = NotionService.paragraph_block(long_text)
+     assert len(block["paragraph"]["rich_text"][0]["text"]["content"]) <= 2000
+ 
+ 
+ def test_roadmap_db_schema_keys():
++    """Test roadmap db schema keys."""
+     schema = NotionService.roadmap_db_schema()
+     assert "Name" in schema
+     assert "Quarter" in schema
+@@ -111,12 +118,14 @@ def test_roadmap_db_schema_keys():
+ 
+ 
+ def test_backlog_db_schema_keys():
++    """Test backlog db schema keys."""
+     schema = NotionService.backlog_db_schema()
+     assert "Name" in schema
+     assert "GitHub Link" in schema
+ 
+ 
+ def test_risks_db_schema_keys():
++    """Test risks db schema keys."""
+     schema = NotionService.risks_db_schema()
+     assert "Issue" in schema
+     assert "Severity" in schema
+diff --git a/tests/test_notion_webhook.py b/tests/test_notion_webhook.py
+index 6cabf01..6f9cf4e 100644
+--- a/tests/test_notion_webhook.py
++++ b/tests/test_notion_webhook.py
+@@ -19,6 +19,7 @@ async def test_notion_webhook_url_verification():
+ 
+ @pytest.mark.asyncio
+ async def test_notion_webhook_ignores_unknown_events():
++    """Test notion webhook ignores unknown events."""
+     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+         resp = await client.post(
+             "/webhooks/notion",
+diff --git a/tests/test_osv_service.py b/tests/test_osv_service.py
+index ccbf0f1..8210224 100644
+--- a/tests/test_osv_service.py
++++ b/tests/test_osv_service.py
+@@ -10,6 +10,7 @@ OSV_BATCH_URL = "https://api.osv.dev/v1/querybatch"
+ 
+ @pytest.mark.asyncio
+ async def test_query_batch_with_vulns():
++    """Test query batch with vulns."""
+     vuln = {
+         "id": "GHSA-1234-abcd-5678",
+         "summary": "Remote code execution in example-pkg",
+@@ -32,6 +33,7 @@ async def test_query_batch_with_vulns():
+ 
+ @pytest.mark.asyncio
+ async def test_query_batch_empty_input():
++    """Test query batch empty input."""
+     svc = OSVService()
+     result = await svc.query_batch([])
+     assert result == []
+@@ -51,6 +53,7 @@ async def test_query_batch_skips_unknown_versions():
+ 
+ @pytest.mark.asyncio
+ async def test_query_batch_handles_network_error():
++    """Test query batch handles network error."""
+     with respx.mock:
+         respx.post(OSV_BATCH_URL).mock(side_effect=Exception("network down"))
+         svc = OSVService()
+@@ -61,6 +64,7 @@ async def test_query_batch_handles_network_error():
+ 
+ 
+ def test_build_package_list_python():
++    """Test build package list python."""
+     deps = {"fastapi": "0.100.0", "httpx": "0.28.0"}
+     langs = {"Python": 50000, "HTML": 1000}
+     packages = OSVService.build_package_list(deps, langs)
+@@ -70,6 +74,7 @@ def test_build_package_list_python():
+ 
+ 
+ def test_build_package_list_strips_semver_prefix():
++    """Test build package list strips semver prefix."""
+     deps = {"react": "^18.2.0", "axios": "~1.0.0"}
+     langs = {"JavaScript": 10000}
+     packages = OSVService.build_package_list(deps, langs)
+@@ -78,10 +83,12 @@ def test_build_package_list_strips_semver_prefix():
+ 
+ 
+ def test_build_package_list_empty():
++    """Test build package list empty."""
+     assert OSVService.build_package_list({}, {}) == []
+ 
+ 
+ def test_format_for_risks_high_severity():
++    """Test format for risks high severity."""
+     vuln = {
+         "id": "GHSA-xxxx",
+         "summary": "Critical buffer overflow",
+@@ -98,6 +105,7 @@ def test_format_for_risks_high_severity():
+ 
+ 
+ def test_format_for_risks_caps_at_10():
++    """Test format for risks caps at 10."""
+     vulns = [{"id": f"GHSA-{i}", "summary": "x", "aliases": [], "severity": [], "affected": []} for i in range(20)]
+     risks = OSVService.format_for_risks(vulns)
+     assert len(risks) == 10
+diff --git a/tests/test_security.py b/tests/test_security.py
+index 9352c82..5d4b057 100644
+--- a/tests/test_security.py
++++ b/tests/test_security.py
+@@ -7,6 +7,7 @@ from app.utils.security import decrypt_token, encrypt_token
+ 
+ 
+ def test_encrypt_decrypt_roundtrip():
++    """Test encrypt decrypt roundtrip."""
+     plaintext = "my-secret-token-abc123"
+     with patch("app.utils.security.get_settings") as mock_settings:
+         from cryptography.fernet import Fernet
+@@ -33,6 +34,7 @@ def test_encrypt_produces_different_ciphertexts():
+ 
+ 
+ def test_decrypt_with_wrong_key_fails():
++    """Test decrypt with wrong key fails."""
+     from cryptography.fernet import Fernet, InvalidToken
+     key1 = Fernet.generate_key().decode()
+     key2 = Fernet.generate_key().decode()

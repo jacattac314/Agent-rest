@@ -1,0 +1,2368 @@
+diff --git a/scripts/analyze_portfolio.py b/scripts/analyze_portfolio.py
+index 6e6853b..e322313 100644
+--- a/scripts/analyze_portfolio.py
++++ b/scripts/analyze_portfolio.py
+@@ -1,3 +1,4 @@
++"""Analyze portfolio module."""
+ import os
+ import sys
+ from datetime import datetime, timedelta
+@@ -18,6 +19,7 @@ if not API_KEY or "PLACEHOLDER" in API_KEY:
+     sys.exit(1)
+ 
+ def analyze_portfolio():
++    """Analyze portfolio."""
+     print("--- TitanFlow Daily Portfolio Analysis ---")
+     
+     # 1. Initialize Client
+diff --git a/scripts/download_historical_data.py b/scripts/download_historical_data.py
+index 5075dd9..84d7afc 100644
+--- a/scripts/download_historical_data.py
++++ b/scripts/download_historical_data.py
+@@ -1,3 +1,4 @@
++"""Download historical data module."""
+ import os
+ import argparse
+ import pandas as pd
+diff --git a/scripts/train_lgbm.py b/scripts/train_lgbm.py
+index 4e88f00..9ecf4c4 100644
+--- a/scripts/train_lgbm.py
++++ b/scripts/train_lgbm.py
+@@ -1,3 +1,4 @@
++"""Train lgbm module."""
+ import os
+ import argparse
+ import pandas as pd
+diff --git a/scripts/train_tft.py b/scripts/train_tft.py
+index b697987..9848b4f 100644
+--- a/scripts/train_tft.py
++++ b/scripts/train_tft.py
+@@ -1,3 +1,4 @@
++"""Train tft module."""
+ import os
+ import argparse
+ import pandas as pd
+diff --git a/scripts/verify_explanations.py b/scripts/verify_explanations.py
+index 4e469bf..6276243 100644
+--- a/scripts/verify_explanations.py
++++ b/scripts/verify_explanations.py
+@@ -1,3 +1,4 @@
++"""Verify explanations module."""
+ import asyncio
+ import redis.asyncio as redis
+ import json
+@@ -8,6 +9,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
+ logger = logging.getLogger("TitanExplanationVerifier")
+ 
+ async def verify_explanations():
++    """Verify explanations."""
+     r = redis.from_url("redis://localhost:6379")
+     pubsub = r.pubsub()
+     await pubsub.subscribe("execution_filled")
+diff --git a/scripts/verify_models.py b/scripts/verify_models.py
+index daa4fb6..411863f 100644
+--- a/scripts/verify_models.py
++++ b/scripts/verify_models.py
+@@ -1,3 +1,4 @@
++"""Verify models module."""
+ import asyncio
+ import redis.asyncio as redis
+ import json
+@@ -11,6 +12,7 @@ MODELS_TO_VERIFY = ["lgb_spy_v1", "lstm_spy_v1", "tft_spy_v1"]
+ VERIFIED_MODELS = set()
+ 
+ async def verify_models():
++    """Verify models."""
+     r = redis.from_url("redis://localhost:6379")
+     pubsub = r.pubsub()
+     await pubsub.subscribe("trade_signals")
+diff --git a/scripts/verify_trade_log.py b/scripts/verify_trade_log.py
+index 14cb13c..07b1955 100644
+--- a/scripts/verify_trade_log.py
++++ b/scripts/verify_trade_log.py
+@@ -1,3 +1,4 @@
++"""Verify trade log module."""
+ import redis
+ import json
+ import uuid
+diff --git a/services/execution/alpaca_client.py b/services/execution/alpaca_client.py
+index ab488dc..38bd4a7 100644
+--- a/services/execution/alpaca_client.py
++++ b/services/execution/alpaca_client.py
+@@ -59,6 +59,7 @@ class TitanAlpacaConnector:
+     # ------------------------------------------------------------------
+ 
+     def __init__(self) -> None:
++        """Init."""
+         self.api_key = os.getenv("ALPACA_API_KEY")
+         self.secret_key = os.getenv("ALPACA_SECRET_KEY")
+ 
+diff --git a/services/execution/alpaca_executor.py b/services/execution/alpaca_executor.py
+index e706756..bfb8889 100644
+--- a/services/execution/alpaca_executor.py
++++ b/services/execution/alpaca_executor.py
+@@ -1,3 +1,4 @@
++"""Alpaca executor module."""
+ import logging
+ import os
+ from alpaca.trading.client import TradingClient
+@@ -7,7 +8,9 @@ from alpaca.trading.enums import OrderSide, TimeInForce
+ logger = logging.getLogger("TitanExecutor")
+ 
+ class AlpacaExecutor:
++    """Alpaca Executor."""
+     def __init__(self):
++        """Init."""
+         self.api_key = os.getenv("ALPACA_API_KEY")
+         self.secret_key = os.getenv("ALPACA_SECRET_KEY")
+         self.paper = os.getenv("EXECUTION_MODE", "paper").strip().lower() != "live"
+diff --git a/services/execution/audit.py b/services/execution/audit.py
+index cb927ff..4e0fac3 100644
+--- a/services/execution/audit.py
++++ b/services/execution/audit.py
+@@ -46,6 +46,7 @@ class TradeAuditLogger:
+ 
+     @classmethod
+     def get_instance(cls) -> "TradeAuditLogger":
++        """Get instance."""
+         if cls._instance is None:
+             cls._instance = cls()
+         return cls._instance
+@@ -55,6 +56,7 @@ class TradeAuditLogger:
+     # ------------------------------------------------------------------
+ 
+     def __init__(self) -> None:
++        """Init."""
+         self.log_path = os.getenv("AUDIT_LOG_PATH", _DEFAULT_LOG_PATH)
+         self._redis_client = None  # Injected via set_redis_client()
+ 
+@@ -77,6 +79,11 @@ class TradeAuditLogger:
+     # ------------------------------------------------------------------
+ 
+     def _build_record(self, event_type: str, **kwargs: Any) -> Dict[str, Any]:
++        """Build record.
++
++        Args:
++            event_type: Description.
++        """
+         record: Dict[str, Any] = {
+             "event_type": event_type,
+             "logged_at": datetime.now(timezone.utc).isoformat(),
+diff --git a/services/execution/core/manager.py b/services/execution/core/manager.py
+index 6e52700..e9cc04d 100644
+--- a/services/execution/core/manager.py
++++ b/services/execution/core/manager.py
+@@ -1,3 +1,4 @@
++"""Manager module."""
+ from typing import Dict, List, Optional
+ import logging
+ from .portfolio import VirtualPortfolio
+@@ -10,10 +11,17 @@ class PortfolioManager:
+     Routes execution fills to the correct portfolio based on order ID or strategy tag.
+     """
+     def __init__(self):
++        """Init."""
+         self.portfolios: Dict[str, VirtualPortfolio] = {}
+         self.order_map: Dict[str, str] = {} # order_id -> portfolio_id
+ 
+     def create_portfolio(self, portfolio_id: str, starting_cash: float = 100000.0) -> VirtualPortfolio:
++        """Create portfolio.
++
++        Args:
++            portfolio_id: Description.
++            starting_cash: Description.
++        """
+         if portfolio_id in self.portfolios:
+             logger.warning(f"Portfolio {portfolio_id} already exists.")
+             return self.portfolios[portfolio_id]
+@@ -24,6 +32,11 @@ class PortfolioManager:
+         return vp
+ 
+     def get_portfolio(self, portfolio_id: str) -> Optional[VirtualPortfolio]:
++        """Get portfolio.
++
++        Args:
++            portfolio_id: Description.
++        """
+         return self.portfolios.get(portfolio_id)
+ 
+     def register_order(self, order_id: str, portfolio_id: str):
+diff --git a/services/execution/core/portfolio.py b/services/execution/core/portfolio.py
+index 1e8bcd9..be1bf9d 100644
+--- a/services/execution/core/portfolio.py
++++ b/services/execution/core/portfolio.py
+@@ -1,3 +1,4 @@
++"""Portfolio module."""
+ from datetime import datetime
+ from typing import Dict, List, Optional
+ import uuid
+@@ -8,6 +9,12 @@ class VirtualPortfolio:
+     Tracks cash, positions, and equity curve independently of the master account.
+     """
+     def __init__(self, portfolio_id: str, starting_cash: float = 100000.0):
++        """Init.
++
++        Args:
++            portfolio_id: Description.
++            starting_cash: Description.
++        """
+         self.id = portfolio_id
+         self.cash = starting_cash
+         self.initial_cash = starting_cash
+@@ -34,6 +41,11 @@ class VirtualPortfolio:
+         return value
+ 
+     def calculate_total_equity(self, current_prices: Dict[str, float]) -> float:
++        """Calculate total equity.
++
++        Args:
++            current_prices: Description.
++        """
+         return self.cash + self.get_market_value(current_prices)
+ 
+     def can_afford(self, symbol: str, qty: int, price: float) -> bool:
+diff --git a/services/execution/main.py b/services/execution/main.py
+index 7bdd891..4b3c11b 100644
+--- a/services/execution/main.py
++++ b/services/execution/main.py
+@@ -1,3 +1,4 @@
++"""Main module."""
+ import asyncio
+ import datetime
+ import json
+@@ -270,6 +271,11 @@ async def run_live_execution(redis_client):
+             logger.error(f"Error in live execution loop: {exc}")
+ 
+ async def run_paper_execution(redis_client):
++    """Run paper execution.
++
++    Args:
++        redis_client: Description.
++    """
+     manager = PortfolioManager()
+     
+     # Configuration
+@@ -338,6 +344,7 @@ async def run_paper_execution(redis_client):
+             logger.error(f"Error in paper execution loop: {exc}")
+ 
+ async def main():
++    """Main."""
+     logger.info("Starting TitanFlow TradeExecutor...")
+     redis_host = os.getenv("REDIS_HOST", "redis")
+     redis_client = redis.from_url(f"redis://{redis_host}:6379")
+diff --git a/services/execution/risk/validator.py b/services/execution/risk/validator.py
+index d943757..c7f7a64 100644
+--- a/services/execution/risk/validator.py
++++ b/services/execution/risk/validator.py
+@@ -1,3 +1,4 @@
++"""Validator module."""
+ import logging
+ from typing import Dict, Optional
+ from core.portfolio import VirtualPortfolio
+@@ -10,6 +11,7 @@ class OrderValidator:
+     Acts as a pre-trade risk engine.
+     """
+     def __init__(self):
++        """Init."""
+         self.MAX_ORDER_VALUE = 50000.0 # Max $ per trade
+         self.MAX_CONCENTRATION = 0.20 # Max 20% of equity in one asset
+ 
+diff --git a/services/execution/simulation/latency.py b/services/execution/simulation/latency.py
+index 678a0ee..bdbaeab 100644
+--- a/services/execution/simulation/latency.py
++++ b/services/execution/simulation/latency.py
+@@ -1,3 +1,4 @@
++"""Latency module."""
+ import asyncio
+ import logging
+ import random
+@@ -10,6 +11,12 @@ class LatencySimulator:
+     Simulates network and processing delays to mimic real-world execution lag.
+     """
+     def __init__(self, min_ms: int = 50, max_ms: int = 200):
++        """Init.
++
++        Args:
++            min_ms: Description.
++            max_ms: Description.
++        """
+         self.min_ms = min_ms
+         self.max_ms = max_ms
+         self.mu = math.log((min_ms + max_ms) / 2)
+diff --git a/services/execution/simulation/slippage.py b/services/execution/simulation/slippage.py
+index b7ec347..9864689 100644
+--- a/services/execution/simulation/slippage.py
++++ b/services/execution/simulation/slippage.py
+@@ -1,3 +1,4 @@
++"""Slippage module."""
+ import random
+ import logging
+ import math
+@@ -9,6 +10,11 @@ class SlippageModel:
+     Simulates price slippage based on market volatility and order size.
+     """
+     def __init__(self, base_bps: int = 5):
++        """Init.
++
++        Args:
++            base_bps: Description.
++        """
+         self.base_bps = base_bps # Basis points (1 bps = 0.01%)
+ 
+     def calculate_price(self, decision_price: float, side: str, qty: float) -> float:
+diff --git a/services/execution/virtual_portfolio.py b/services/execution/virtual_portfolio.py
+index e646ed4..53273df 100644
+--- a/services/execution/virtual_portfolio.py
++++ b/services/execution/virtual_portfolio.py
+@@ -1,15 +1,18 @@
++"""Virtual portfolio module."""
+ from dataclasses import dataclass
+ from typing import Dict, Optional, Tuple
+ 
+ 
+ @dataclass
+ class Position:
++    """Position."""
+     qty: float = 0.0
+     avg_cost: float = 0.0
+ 
+ 
+ @dataclass
+ class TradeFill:
++    """Trade Fill."""
+     symbol: str
+     side: str
+     qty: float
+@@ -21,6 +24,13 @@ class VirtualPortfolio:
+     """In-memory portfolio ledger for one model."""
+ 
+     def __init__(self, model_id: str, model_name: str, starting_cash: float):
++        """Init.
++
++        Args:
++            model_id: Description.
++            model_name: Description.
++            starting_cash: Description.
++        """
+         self.model_id = model_id
+         self.model_name = model_name
+         self.starting_cash = starting_cash
+@@ -32,6 +42,11 @@ class VirtualPortfolio:
+         self.realized_pnl = 0.0
+ 
+     def mark_to_market(self, last_prices: Dict[str, float]) -> float:
++        """Mark to market.
++
++        Args:
++            last_prices: Description.
++        """
+         total = self.cash
+         for symbol, position in self.positions.items():
+             if position.qty <= 0:
+@@ -41,6 +56,13 @@ class VirtualPortfolio:
+         return total
+ 
+     def buy(self, symbol: str, price: float, budget: float) -> Optional[TradeFill]:
++        """Buy.
++
++        Args:
++            symbol: Description.
++            price: Description.
++            budget: Description.
++        """
+         if price <= 0 or budget <= 0:
+             return None
+ 
+@@ -65,6 +87,13 @@ class VirtualPortfolio:
+         return TradeFill(symbol=symbol, side="BUY", qty=qty, price=price)
+ 
+     def sell(self, symbol: str, price: float, qty: Optional[float] = None) -> Optional[TradeFill]:
++        """Sell.
++
++        Args:
++            symbol: Description.
++            price: Description.
++            qty: Description.
++        """
+         if price <= 0:
+             return None
+ 
+@@ -102,6 +131,11 @@ class VirtualPortfolio:
+         )
+ 
+     def snapshot(self, last_prices: Dict[str, float]) -> dict:
++        """Snapshot.
++
++        Args:
++            last_prices: Description.
++        """
+         equity = self.mark_to_market(last_prices)
+         pnl = equity - self.starting_cash
+         win_rate = (self.wins / self.closed_trades * 100.0) if self.closed_trades else 0.0
+@@ -132,6 +166,14 @@ class VirtualPortfolioManager:
+         min_confidence: float = 0.25,
+         max_models: int = 10,
+     ):
++        """Init.
++
++        Args:
++            starting_cash: Description.
++            risk_per_trade: Description.
++            min_confidence: Description.
++            max_models: Description.
++        """
+         self.starting_cash = starting_cash
+         self.risk_per_trade = risk_per_trade
+         self.min_confidence = min_confidence
+@@ -140,10 +182,22 @@ class VirtualPortfolioManager:
+         self.last_prices: Dict[str, float] = {}
+ 
+     def update_price(self, symbol: str, price: float):
++        """Update price.
++
++        Args:
++            symbol: Description.
++            price: Description.
++        """
+         if symbol and price > 0:
+             self.last_prices[symbol] = price
+ 
+     def _get_or_create_portfolio(self, model_id: str, model_name: str) -> Optional[VirtualPortfolio]:
++        """Get or create portfolio.
++
++        Args:
++            model_id: Description.
++            model_name: Description.
++        """
+         portfolio = self.portfolios.get(model_id)
+         if portfolio:
+             return portfolio
+@@ -160,6 +214,11 @@ class VirtualPortfolioManager:
+         return portfolio
+ 
+     def apply_signal(self, signal: dict) -> Optional[Tuple[VirtualPortfolio, TradeFill]]:
++        """Apply signal.
++
++        Args:
++            signal: Description.
++        """
+         side = signal.get("signal")
+         if side not in {"BUY", "SELL"}:
+             return None
+@@ -192,6 +251,7 @@ class VirtualPortfolioManager:
+         return portfolio, fill
+ 
+     def leaderboard(self) -> list:
++        """Leaderboard."""
+         snapshots = [p.snapshot(self.last_prices) for p in self.portfolios.values()]
+         snapshots.sort(key=lambda row: row["pnl"], reverse=True)
+         return snapshots
+diff --git a/services/gateway/db.py b/services/gateway/db.py
+index a8203ad..be17a04 100644
+--- a/services/gateway/db.py
++++ b/services/gateway/db.py
+@@ -1,3 +1,4 @@
++"""Db module."""
+ import sys
+ import logging
+ import os
+@@ -10,7 +11,9 @@ import json
+ logger = logging.getLogger("TitanDB")
+ 
+ class DatabaseManager:
++    """Database Manager."""
+     def __init__(self):
++        """Init."""
+         self.pg_pool = None
+         self.redis = None
+         self.quest_host = os.getenv("QUESTDB_HOST", "questdb")
+diff --git a/services/gateway/main.py b/services/gateway/main.py
+index 4366096..701eea8 100644
+--- a/services/gateway/main.py
++++ b/services/gateway/main.py
+@@ -1,3 +1,4 @@
++"""Main module."""
+ import asyncio
+ import os
+ import logging
+@@ -42,6 +43,7 @@ async def handle_tick(tick_data):
+     )
+ 
+ async def main():
++    """Main."""
+     logger.info("Starting TitanFlow MarketDataGateway...")
+     
+     # 1. Connect to Infrastructure
+diff --git a/services/gateway/providers/alpaca_provider.py b/services/gateway/providers/alpaca_provider.py
+index 3f972c3..b46838f 100644
+--- a/services/gateway/providers/alpaca_provider.py
++++ b/services/gateway/providers/alpaca_provider.py
+@@ -1,3 +1,4 @@
++"""Alpaca provider module."""
+ import asyncio
+ import json
+ import logging
+@@ -21,6 +22,11 @@ class AlpacaDataProvider(DataProvider):
+     """
+     
+     def __init__(self, api_keys: Dict[str, str]):
++        """Init.
++
++        Args:
++            api_keys: Description.
++        """
+         super().__init__(api_keys)
+         self.api_key = api_keys.get("ALPACA_API_KEY")
+         self.secret_key = api_keys.get("ALPACA_SECRET_KEY")
+@@ -117,6 +123,11 @@ class AlpacaDataProvider(DataProvider):
+         return bars.df
+ 
+     def get_latest_price(self, symbol: str) -> float:
++        """Get latest price.
++
++        Args:
++            symbol: Description.
++        """
+         request = StockSnapshotRequest(symbol_or_symbols=symbol)
+         snapshot = self.history_client.get_stock_snapshot(request)
+         if snapshot and symbol in snapshot:
+diff --git a/services/gateway/providers/base.py b/services/gateway/providers/base.py
+index 3c9b0f8..de3a30e 100644
+--- a/services/gateway/providers/base.py
++++ b/services/gateway/providers/base.py
+@@ -1,3 +1,4 @@
++"""Base module."""
+ from abc import ABC, abstractmethod
+ import pandas as pd
+ from datetime import datetime
+@@ -10,6 +11,11 @@ class DataProvider(ABC):
+     """
+     
+     def __init__(self, api_keys: Dict[str, str]):
++        """Init.
++
++        Args:
++            api_keys: Description.
++        """
+         self.api_keys = api_keys
+ 
+     @abstractmethod
+diff --git a/services/gateway/providers/synthetic_provider.py b/services/gateway/providers/synthetic_provider.py
+index cd232e8..ec06000 100644
+--- a/services/gateway/providers/synthetic_provider.py
++++ b/services/gateway/providers/synthetic_provider.py
+@@ -1,3 +1,4 @@
++"""Synthetic provider module."""
+ import asyncio
+ import logging
+ import random
+@@ -17,6 +18,11 @@ class SyntheticDataProvider(DataProvider):
+     """
+     
+     def __init__(self, api_keys: Dict[str, str] = None):
++        """Init.
++
++        Args:
++            api_keys: Description.
++        """
+         super().__init__(api_keys or {})
+         # Initial prices for our fake assets
+         self.prices = {
+@@ -90,4 +96,9 @@ class SyntheticDataProvider(DataProvider):
+         return df
+ 
+     def get_latest_price(self, symbol: str) -> float:
++        """Get latest price.
++
++        Args:
++            symbol: Description.
++        """
+         return self.prices.get(symbol, 100.0)
+diff --git a/services/risk/main.py b/services/risk/main.py
+index 0c5ca7f..c7f3788 100644
+--- a/services/risk/main.py
++++ b/services/risk/main.py
+@@ -36,6 +36,7 @@ _PERFORMANCE_CHECK_INTERVAL = int(os.getenv("RISK_PERF_CHECK_INTERVAL", "10"))
+ 
+ 
+ async def main():
++    """Main."""
+     logger.info("Starting TitanFlow RiskGuardian...")
+ 
+     config = {
+diff --git a/services/risk/risk_engine.py b/services/risk/risk_engine.py
+index 9369bde..de9968e 100644
+--- a/services/risk/risk_engine.py
++++ b/services/risk/risk_engine.py
+@@ -25,8 +25,14 @@ logger = logging.getLogger("TitanRisk")
+ 
+ 
+ class RiskEngine:
++    """Risk Engine."""
+     def __init__(self, config: dict):
+         # --- Circuit-breaker thresholds ---
++        """Init.
++
++        Args:
++            config: Description.
++        """
+         self.max_daily_loss_pct: float = config.get("MAX_DAILY_LOSS_PCT", 0.03)
+         self.max_consecutive_losses: int = int(config.get("MAX_CONSECUTIVE_LOSSES", 5))
+ 
+diff --git a/services/signal/db.py b/services/signal/db.py
+index 20b847c..d643d2f 100644
+--- a/services/signal/db.py
++++ b/services/signal/db.py
+@@ -1,3 +1,4 @@
++"""Db module."""
+ import logging
+ import os
+ import asyncpg
+@@ -8,8 +9,10 @@ import pandas as pd
+ logger = logging.getLogger("TitanSignalDB")
+ 
+ class SignalDB:
++    """Signal DB."""
+     def __init__(self):
+         # QuestDB (PG Wire)
++        """Init."""
+         self.quest_user = "admin"
+         self.quest_pass = "quest"
+         self.quest_host = os.getenv("QUESTDB_HOST", "questdb")
+@@ -38,6 +41,7 @@ class SignalDB:
+             raise
+ 
+     async def close(self):
++        """Close."""
+         if self.quest_pool:
+             await self.quest_pool.close()
+         if self.redis:
+diff --git a/services/signal/explainability.py b/services/signal/explainability.py
+index 907da38..9b9c5f4 100644
+--- a/services/signal/explainability.py
++++ b/services/signal/explainability.py
+@@ -1,3 +1,4 @@
++"""Explainability module."""
+ import shap
+ import numpy as np
+ import torch
+@@ -6,6 +7,7 @@ import logging
+ logger = logging.getLogger("TitanXAI")
+ 
+ class XAIEngine:
++    """XAIEngine."""
+     def __init__(self, model, background_data):
+         """
+         Initialize SHAP Explainer.
+diff --git a/services/signal/feature_engineering.py b/services/signal/feature_engineering.py
+index 2e3a3aa..53a309c 100644
+--- a/services/signal/feature_engineering.py
++++ b/services/signal/feature_engineering.py
+@@ -1,3 +1,4 @@
++"""Feature engineering module."""
+ import pandas as pd
+ import ta
+ 
+@@ -6,6 +7,7 @@ class FeatureEngineer:
+     Computes technical indicators and features for ML models using 'ta' library.
+     """
+     def __init__(self):
++        """Init."""
+         pass
+ 
+     def calculate_features(self, df: pd.DataFrame) -> pd.DataFrame:
+diff --git a/services/signal/main.py b/services/signal/main.py
+index a81b471..c169970 100644
+--- a/services/signal/main.py
++++ b/services/signal/main.py
+@@ -1,3 +1,4 @@
++"""Main module."""
+ import asyncio
+ import json
+ import logging
+@@ -24,6 +25,11 @@ logging.basicConfig(
+ logger = logging.getLogger("TitanSignalService")
+ 
+ async def run_signal_engine(redis_client):
++    """Run signal engine.
++
++    Args:
++        redis_client: Description.
++    """
+     logger.info("Initializing Signal Engine...")
+     
+     # 1. Initialize Strategies
+@@ -64,6 +70,7 @@ async def run_signal_engine(redis_client):
+             logger.error(f"Error processing tick: {e}")
+ 
+ async def main():
++    """Main."""
+     logger.info("Starting TitanFlow SignalEngine...")
+     redis_host = os.getenv("REDIS_HOST", "redis")
+     redis_client = redis.from_url(f"redis://{redis_host}:6379")
+diff --git a/services/signal/model.py b/services/signal/model.py
+index 926f920..8f419f9 100644
+--- a/services/signal/model.py
++++ b/services/signal/model.py
+@@ -1,3 +1,4 @@
++"""Model module."""
+ import torch
+ import torch.nn as nn
+ import logging
+@@ -5,7 +6,16 @@ import logging
+ logger = logging.getLogger("TitanModel")
+ 
+ class HybridModel(nn.Module):
++    """Hybrid Model."""
+     def __init__(self, input_dim, hidden_dim=64, num_layers=2, num_classes=3):
++        """Init.
++
++        Args:
++            input_dim: Description.
++            hidden_dim: Description.
++            num_layers: Description.
++            num_classes: Description.
++        """
+         super(HybridModel, self).__init__()
+         
+         # 1. LSTM Branch (Temporal Dependencies)
+@@ -44,6 +54,11 @@ class HybridModel(nn.Module):
+         # x shape: (Batch, Seq_Len, Features)
+         
+         # --- LSTM Pass ---
++        """Forward.
++
++        Args:
++            x: Description.
++        """
+         lstm_out, (h_n, c_n) = self.lstm(x)
+         lstm_feat = h_n[-1] # Last hidden state: (Batch, Hidden_Dim)
+         
+@@ -65,6 +80,12 @@ class HybridModel(nn.Module):
+         return logits
+ 
+ def load_model(path: str = None, input_dim: int = 8):
++    """Load model.
++
++    Args:
++        path: Description.
++        input_dim: Description.
++    """
+     model = HybridModel(input_dim=input_dim)
+     if path:
+         try:
+diff --git a/services/signal/models/lstm_model.py b/services/signal/models/lstm_model.py
+index 7f1cf42..6137548 100644
+--- a/services/signal/models/lstm_model.py
++++ b/services/signal/models/lstm_model.py
+@@ -1,8 +1,15 @@
++"""Lstm model module."""
+ import torch
+ import torch.nn as nn
+ 
+ class AttentionBlock(nn.Module):
++    """Attention Block."""
+     def __init__(self, hidden_size):
++        """Init.
++
++        Args:
++            hidden_size: Description.
++        """
+         super(AttentionBlock, self).__init__()
+         self.attention = nn.Sequential(
+             nn.Linear(hidden_size, hidden_size),
+@@ -12,12 +19,26 @@ class AttentionBlock(nn.Module):
+ 
+     def forward(self, x):
+         # x: [batch, seq_len, hidden_size]
++        """Forward.
++
++        Args:
++            x: Description.
++        """
+         weights = self.attention(x) # [batch, seq_len, 1]
+         weights = torch.softmax(weights, dim=1)
+         return torch.sum(x * weights, dim=1) # [batch, hidden_size]
+ 
+ class LSTMModel(nn.Module):
++    """LSTMModel."""
+     def __init__(self, input_size=14, hidden_size=64, num_layers=2, dropout=0.2):
++        """Init.
++
++        Args:
++            input_size: Description.
++            hidden_size: Description.
++            num_layers: Description.
++            dropout: Description.
++        """
+         super(LSTMModel, self).__init__()
+         
+         self.lstm = nn.LSTM(
+@@ -40,6 +61,11 @@ class LSTMModel(nn.Module):
+ 
+     def forward(self, x):
+         # x: [batch, seq_len, input_size]
++        """Forward.
++
++        Args:
++            x: Description.
++        """
+         out, _ = self.lstm(x) # out: [batch, seq_len, hidden_size]
+         context = self.attention(out) # context: [batch, hidden_size]
+         prediction = self.fc(context) # [batch, 1]
+diff --git a/services/signal/models/tft_model.py b/services/signal/models/tft_model.py
+index 08bdc49..a7d9e6a 100644
+--- a/services/signal/models/tft_model.py
++++ b/services/signal/models/tft_model.py
+@@ -1,9 +1,17 @@
++"""Tft model module."""
+ import torch
+ import torch.nn as nn
+ import math
+ 
+ class PositionalEncoding(nn.Module):
++    """Positional Encoding."""
+     def __init__(self, d_model, max_len=5000):
++        """Init.
++
++        Args:
++            d_model: Description.
++            max_len: Description.
++        """
+         super(PositionalEncoding, self).__init__()
+         pe = torch.zeros(max_len, d_model)
+         position = torch.arange(0, max_len, dtype=torch.float).unsqueeze(1)
+@@ -14,6 +22,11 @@ class PositionalEncoding(nn.Module):
+         self.register_buffer('pe', pe)
+ 
+     def forward(self, x):
++        """Forward.
++
++        Args:
++            x: Description.
++        """
+         return x + self.pe[:x.size(0), :]
+ 
+ class TFTModel(nn.Module):
+@@ -22,6 +35,16 @@ class TFTModel(nn.Module):
+     Uses standard TransformerEncoder.
+     """
+     def __init__(self, input_size=14, d_model=64, nhead=4, num_layers=2, output_horizon=5, dropout=0.1):
++        """Init.
++
++        Args:
++            input_size: Description.
++            d_model: Description.
++            nhead: Description.
++            num_layers: Description.
++            output_horizon: Description.
++            dropout: Description.
++        """
+         super(TFTModel, self).__init__()
+         
+         self.input_embedding = nn.Linear(input_size, d_model)
+@@ -37,6 +60,11 @@ class TFTModel(nn.Module):
+         # x: [batch, seq_len, input_size]
+         # Transformer expects [seq_len, batch, d_model]
+         
++        """Forward.
++
++        Args:
++            x: Description.
++        """
+         x = self.input_embedding(x) # [batch, seq_len, d_model]
+         x = x.permute(1, 0, 2)      # [seq_len, batch, d_model]
+         
+diff --git a/services/signal/strategies.py b/services/signal/strategies.py
+index aed6e05..a9a1912 100644
+--- a/services/signal/strategies.py
++++ b/services/signal/strategies.py
+@@ -1,3 +1,4 @@
++"""Strategies module."""
+ from __future__ import annotations
+ 
+ from abc import ABC, abstractmethod
+@@ -11,6 +12,7 @@ import ta
+ 
+ @dataclass
+ class StrategyDecision:
++    """Strategy Decision."""
+     signal: str
+     confidence: float
+     explanation: List[dict]
+@@ -29,6 +31,7 @@ class Strategy(ABC):
+ 
+ 
+ class SMACrossover(Strategy):
++    """SMACrossover."""
+     model_id = "sma_crossover"
+     model_name = "SMA Crossover"
+ 
+@@ -38,6 +41,13 @@ class SMACrossover(Strategy):
+         long_window: int = 30,
+         min_spread_pct: float = 0.001,
+     ):
++        """Init.
++
++        Args:
++            short_window: Description.
++            long_window: Description.
++            min_spread_pct: Description.
++        """
+         if short_window >= long_window:
+             raise ValueError("short_window must be less than long_window")
+         self.short_window = short_window
+@@ -45,6 +55,11 @@ class SMACrossover(Strategy):
+         self.min_spread_pct = min_spread_pct
+ 
+     def generate_signal(self, bars: list[dict]) -> StrategyDecision | None:
++        """Generate signal.
++
++        Args:
++            bars: Description.
++        """
+         if len(bars) < (self.long_window + 1):
+             return None
+ 
+@@ -81,6 +96,7 @@ class SMACrossover(Strategy):
+ 
+ 
+ class RSIMeanReversion(Strategy):
++    """RSIMean Reversion."""
+     model_id = "rsi_mean_reversion"
+     model_name = "RSI Mean Reversion"
+ 
+@@ -90,11 +106,23 @@ class RSIMeanReversion(Strategy):
+         oversold: float = 30.0,
+         overbought: float = 70.0,
+     ):
++        """Init.
++
++        Args:
++            window: Description.
++            oversold: Description.
++            overbought: Description.
++        """
+         self.window = window
+         self.oversold = oversold
+         self.overbought = overbought
+ 
+     def generate_signal(self, bars: list[dict]) -> StrategyDecision | None:
++        """Generate signal.
++
++        Args:
++            bars: Description.
++        """
+         if len(bars) < (self.window + 2):
+             return None
+ 
+diff --git a/services/signal/strategies/__init__.py b/services/signal/strategies/__init__.py
+index 645540f..892c299 100644
+--- a/services/signal/strategies/__init__.py
++++ b/services/signal/strategies/__init__.py
+@@ -1,3 +1,4 @@
++"""Package init for strategies."""
+ # Strategies Package
+ from .base import Strategy
+ from .sma_crossover import SMACrossover
+diff --git a/services/signal/strategies/base.py b/services/signal/strategies/base.py
+index 496dea4..6a6d3ab 100644
+--- a/services/signal/strategies/base.py
++++ b/services/signal/strategies/base.py
+@@ -1,3 +1,4 @@
++"""Base module."""
+ from abc import ABC, abstractmethod
+ from typing import Dict, Any, Optional
+ 
+@@ -8,6 +9,11 @@ class Strategy(ABC):
+     """
+     
+     def __init__(self, config: Dict[str, Any]):
++        """Init.
++
++        Args:
++            config: Description.
++        """
+         self.config = config
+         self.symbol = config.get("symbol", "SPY")
+         self.model_id = config.get("model_id", "unknown_strategy")
+diff --git a/services/signal/strategies/lightgbm_strategy.py b/services/signal/strategies/lightgbm_strategy.py
+index b6b7a3d..0c709df 100644
+--- a/services/signal/strategies/lightgbm_strategy.py
++++ b/services/signal/strategies/lightgbm_strategy.py
+@@ -1,3 +1,4 @@
++"""Lightgbm strategy module."""
+ import logging
+ import os
+ import numpy as np
+@@ -17,6 +18,11 @@ class LightGBMStrategy(Strategy):
+     Includes SHAP explainability.
+     """
+     def __init__(self, config: Dict[str, Any]):
++        """Init.
++
++        Args:
++            config: Description.
++        """
+         super().__init__(config)
+         self.fe = FeatureEngineer()
+         self.model = None
+@@ -62,6 +68,11 @@ class LightGBMStrategy(Strategy):
+         # Let's simple-hack: aggregate ticks into 1-minute bars in memory?
+         # Or just append price as close/high/low/open for that timestamp.
+         
++        """On tick.
++
++        Args:
++            tick: Description.
++        """
+         price = float(tick.get("price", 0.0))
+         if price <= 0: return None
+         
+@@ -143,4 +154,9 @@ class LightGBMStrategy(Strategy):
+ 
+     async def on_bar(self, bar: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+         # To be implemented when Gateway sends real bars
++        """On bar.
++
++        Args:
++            bar: Description.
++        """
+         pass
+diff --git a/services/signal/strategies/logistic_regression_strategy.py b/services/signal/strategies/logistic_regression_strategy.py
+index 5ae01ba..07c71b9 100644
+--- a/services/signal/strategies/logistic_regression_strategy.py
++++ b/services/signal/strategies/logistic_regression_strategy.py
+@@ -1,3 +1,4 @@
++"""Logistic regression strategy module."""
+ import logging
+ from collections import deque
+ from typing import Any, Deque, Dict, Optional
+@@ -17,6 +18,11 @@ class LogisticRegressionStrategy(Strategy):
+     """Online-ish logistic regression using technical features for directional classification."""
+ 
+     def __init__(self, config: Dict[str, Any]):
++        """Init.
++
++        Args:
++            config: Description.
++        """
+         super().__init__(config)
+         self.fe = FeatureEngineer()
+         self.bars: Deque[Dict[str, float]] = deque(maxlen=config.get("buffer_size", 260))
+@@ -30,6 +36,7 @@ class LogisticRegressionStrategy(Strategy):
+         self.model_ready = False
+ 
+     def _fit_model(self) -> None:
++        """Fit model."""
+         df = pd.DataFrame(list(self.bars))
+         feats = self.fe.calculate_features(df)
+         if len(feats) < 40:
+@@ -60,6 +67,11 @@ class LogisticRegressionStrategy(Strategy):
+         self.model_ready = True
+ 
+     async def on_tick(self, tick: Dict[str, Any]) -> Optional[Dict[str, Any]]:
++        """On tick.
++
++        Args:
++            tick: Description.
++        """
+         price = float(tick.get("price", 0.0))
+         if price <= 0:
+             return None
+@@ -116,4 +128,9 @@ class LogisticRegressionStrategy(Strategy):
+         }
+ 
+     async def on_bar(self, bar: Dict[str, Any]) -> Optional[Dict[str, Any]]:
++        """On bar.
++
++        Args:
++            bar: Description.
++        """
+         return None
+diff --git a/services/signal/strategies/lstm_strategy.py b/services/signal/strategies/lstm_strategy.py
+index 809a694..3cf3ad0 100644
+--- a/services/signal/strategies/lstm_strategy.py
++++ b/services/signal/strategies/lstm_strategy.py
+@@ -1,3 +1,4 @@
++"""Lstm strategy module."""
+ import logging
+ import asyncio
+ import numpy as np
+@@ -17,6 +18,11 @@ class LSTMStrategy(Strategy):
+     Predicts next bar direction based on a lookback window of 60 bars.
+     """
+     def __init__(self, config: Dict[str, Any]):
++        """Init.
++
++        Args:
++            config: Description.
++        """
+         super().__init__(config)
+         self.lookback = config.get("lookback", 60)
+         self.device = torch.device("cpu") # use cpu for inference in this container
+@@ -133,4 +139,9 @@ class LSTMStrategy(Strategy):
+         return None
+ 
+     async def on_bar(self, bar: Dict[str, Any]) -> Optional[Dict[str, Any]]:
++        """On bar.
++
++        Args:
++            bar: Description.
++        """
+         return None
+diff --git a/services/signal/strategies/random_forest_strategy.py b/services/signal/strategies/random_forest_strategy.py
+index 86fba4d..064d171 100644
+--- a/services/signal/strategies/random_forest_strategy.py
++++ b/services/signal/strategies/random_forest_strategy.py
+@@ -1,3 +1,4 @@
++"""Random forest strategy module."""
+ import logging
+ from collections import deque
+ from typing import Any, Deque, Dict, Optional
+@@ -16,6 +17,11 @@ class RandomForestStrategy(Strategy):
+     """Adaptive random forest classifier over rolling market features."""
+ 
+     def __init__(self, config: Dict[str, Any]):
++        """Init.
++
++        Args:
++            config: Description.
++        """
+         super().__init__(config)
+         self.fe = FeatureEngineer()
+         self.bars: Deque[Dict[str, float]] = deque(maxlen=config.get("buffer_size", 320))
+@@ -33,6 +39,7 @@ class RandomForestStrategy(Strategy):
+         )
+ 
+     def _fit_model(self) -> None:
++        """Fit model."""
+         df = pd.DataFrame(list(self.bars))
+         feats = self.fe.calculate_features(df)
+         if len(feats) < 50:
+@@ -51,6 +58,11 @@ class RandomForestStrategy(Strategy):
+         self.model_ready = True
+ 
+     async def on_tick(self, tick: Dict[str, Any]) -> Optional[Dict[str, Any]]:
++        """On tick.
++
++        Args:
++            tick: Description.
++        """
+         price = float(tick.get("price", 0.0))
+         if price <= 0:
+             return None
+@@ -106,4 +118,9 @@ class RandomForestStrategy(Strategy):
+         }
+ 
+     async def on_bar(self, bar: Dict[str, Any]) -> Optional[Dict[str, Any]]:
++        """On bar.
++
++        Args:
++            bar: Description.
++        """
+         return None
+diff --git a/services/signal/strategies/sma_crossover.py b/services/signal/strategies/sma_crossover.py
+index 6632ed5..e2d882b 100644
+--- a/services/signal/strategies/sma_crossover.py
++++ b/services/signal/strategies/sma_crossover.py
+@@ -1,3 +1,4 @@
++"""Sma crossover module."""
+ from typing import Dict, Any, Optional, Deque
+ from collections import deque
+ import statistics
+@@ -14,6 +15,11 @@ class SMACrossover(Strategy):
+     """
+ 
+     def __init__(self, config: Dict[str, Any]):
++        """Init.
++
++        Args:
++            config: Description.
++        """
+         super().__init__(config)
+         self.fast_period = config.get("fast_period", 20) # Ticks, not days ideally, but for MVP tick-based
+         self.slow_period = config.get("slow_period", 50)
+@@ -24,6 +30,11 @@ class SMACrossover(Strategy):
+         self.current_position = None # 'LONG', 'SHORT', or None
+ 
+     async def on_tick(self, tick: Dict[str, Any]) -> Optional[Dict[str, Any]]:
++        """On tick.
++
++        Args:
++            tick: Description.
++        """
+         price = float(tick.get("price", 0.0))
+         if price <= 0:
+             return None
+@@ -83,4 +94,9 @@ class SMACrossover(Strategy):
+ 
+     async def on_bar(self, bar: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+         # Not using bars yet for this tick-based MVP
++        """On bar.
++
++        Args:
++            bar: Description.
++        """
+         return None
+diff --git a/services/signal/strategies/tft_strategy.py b/services/signal/strategies/tft_strategy.py
+index 765c860..be63b39 100644
+--- a/services/signal/strategies/tft_strategy.py
++++ b/services/signal/strategies/tft_strategy.py
+@@ -1,3 +1,4 @@
++"""Tft strategy module."""
+ import logging
+ import asyncio
+ import numpy as np
+@@ -17,6 +18,11 @@ class TFTStrategy(Strategy):
+     Predicts next 5 bars relative price movement.
+     """
+     def __init__(self, config: Dict[str, Any]):
++        """Init.
++
++        Args:
++            config: Description.
++        """
+         super().__init__(config)
+         self.lookback = config.get("lookback", 60)
+         self.device = torch.device("cpu")
+@@ -51,6 +57,11 @@ class TFTStrategy(Strategy):
+         logger.info(f"Initialized TFT Strategy for {self.symbol}. Waiting for {self.warmup_period} bars.")
+ 
+     async def on_tick(self, tick: Dict[str, Any]) -> Optional[Dict[str, Any]]:
++        """On tick.
++
++        Args:
++            tick: Description.
++        """
+         price = float(tick["price"])
+         self.prices.append(price)
+         
+@@ -133,4 +144,9 @@ class TFTStrategy(Strategy):
+         return None
+ 
+     async def on_bar(self, bar: Dict[str, Any]) -> Optional[Dict[str, Any]]:
++        """On bar.
++
++        Args:
++            bar: Description.
++        """
+         return None
+diff --git a/services/signal/verify_signal_engine.py b/services/signal/verify_signal_engine.py
+index 5902a45..a993f99 100644
+--- a/services/signal/verify_signal_engine.py
++++ b/services/signal/verify_signal_engine.py
+@@ -1,3 +1,4 @@
++"""Verify signal engine module."""
+ import sys
+ import os
+ import asyncio
+@@ -13,6 +14,7 @@ from model import load_model, HybridModel
+ from explainability import XAIEngine
+ 
+ def test_signal_pipeline():
++    """Test signal pipeline."""
+     print("Testing Signal Engine Pipeline...")
+     
+     # 1. Mock Data Generation
+diff --git a/tests/integration_test.py b/tests/integration_test.py
+index 1978456..f92f5fb 100644
+--- a/tests/integration_test.py
++++ b/tests/integration_test.py
+@@ -1,3 +1,4 @@
++"""Integration test module."""
+ import redis
+ import json
+ import uuid
+@@ -11,6 +12,7 @@ REDIS_HOST = os.getenv('REDIS_HOST', 'localhost')
+ REDIS_PORT = 6379
+ 
+ def run_test():
++    """Run test."""
+     print(f"Connecting to Redis at {REDIS_HOST}:{REDIS_PORT}...")
+     try:
+         r = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, decode_responses=True)
+diff --git a/tests/unit/test_execution_channel_contract.py b/tests/unit/test_execution_channel_contract.py
+index f4c8fe0..4430f17 100644
+--- a/tests/unit/test_execution_channel_contract.py
++++ b/tests/unit/test_execution_channel_contract.py
+@@ -113,6 +113,7 @@ class TestSimulateFillAcceptsExecutionRequests:
+     """simulate_fill must succeed for well-formed execution_requests payloads."""
+ 
+     async def test_buy_produces_fill(self):
++        """Test buy produces fill."""
+         manager = PortfolioManager()
+         req = _execution_request(side="buy", qty=5, price=450.0)
+         fill = await simulate_fill(req, current_price=450.0, manager=manager)
+@@ -175,12 +176,14 @@ class TestSimulateFillRejectsTradeSignals:
+         )
+ 
+     async def test_zero_qty_is_rejected(self):
++        """Test zero qty is rejected."""
+         manager = PortfolioManager()
+         req = _execution_request(side="buy", qty=0)
+         fill = await simulate_fill(req, current_price=450.0, manager=manager)
+         assert fill is None
+ 
+     async def test_missing_side_is_rejected(self):
++        """Test missing side is rejected."""
+         manager = PortfolioManager()
+         req = {"model_id": "m1", "symbol": "SPY", "qty": 5, "confidence": 0.9}
+         fill = await simulate_fill(req, current_price=450.0, manager=manager)
+@@ -212,12 +215,14 @@ class TestChannelSubscriptionContract:
+         return re.findall(r'subscribe\(([^)]+)\)', src)
+ 
+     def test_paper_loop_subscribes_to_execution_requests(self):
++        """Test paper loop subscribes to execution requests."""
+         src = inspect.getsource(execution_main.run_paper_execution)
+         assert "execution_requests" in src, (
+             "run_paper_execution must subscribe to 'execution_requests'"
+         )
+ 
+     def test_paper_loop_does_not_subscribe_to_trade_signals(self):
++        """Test paper loop does not subscribe to trade signals."""
+         for call in self._subscribe_args("run_paper_execution"):
+             assert "trade_signals" not in call, (
+                 f"run_paper_execution must NOT subscribe to 'trade_signals'. "
+@@ -225,6 +230,7 @@ class TestChannelSubscriptionContract:
+             )
+ 
+     def test_paper_loop_channel_handler_checks_execution_requests(self):
++        """Test paper loop channel handler checks execution requests."""
+         src = inspect.getsource(execution_main.run_paper_execution)
+         branch_channels = re.findall(r'channel\s*==\s*["\']([^"\']+)["\']', src)
+         assert "execution_requests" in branch_channels, (
+@@ -236,12 +242,14 @@ class TestChannelSubscriptionContract:
+         )
+ 
+     def test_live_loop_subscribes_to_execution_requests(self):
++        """Test live loop subscribes to execution requests."""
+         src = inspect.getsource(execution_main.run_live_execution)
+         assert "execution_requests" in src, (
+             "run_live_execution must subscribe to 'execution_requests'"
+         )
+ 
+     def test_live_loop_does_not_subscribe_to_trade_signals(self):
++        """Test live loop does not subscribe to trade signals."""
+         for call in self._subscribe_args("run_live_execution"):
+             assert "trade_signals" not in call, (
+                 f"run_live_execution must NOT subscribe to 'trade_signals'. "
+diff --git a/tests/unit/test_feature_engineering.py b/tests/unit/test_feature_engineering.py
+index 9b92c5a..96bc93a 100644
+--- a/tests/unit/test_feature_engineering.py
++++ b/tests/unit/test_feature_engineering.py
+@@ -17,6 +17,7 @@ from feature_engineering import FeatureEngineer
+ # ---------------------------------------------------------------------------
+ 
+ def make_engineer() -> FeatureEngineer:
++    """Make engineer."""
+     return FeatureEngineer()
+ 
+ 
+@@ -46,7 +47,9 @@ EXPECTED_COLUMNS = {"RSI", "MACD", "MACD_line", "MACD_signal", "log_ret", "ATR",
+ # ---------------------------------------------------------------------------
+ 
+ class TestEmptyDataFrame:
++    """Test Empty Data Frame."""
+     def test_returns_empty_df_unchanged(self):
++        """Test returns empty df unchanged."""
+         fe = make_engineer()
+         empty = pd.DataFrame(columns=["open", "high", "low", "close", "volume"])
+         result = fe.calculate_features(empty)
+@@ -58,13 +61,16 @@ class TestEmptyDataFrame:
+ # ---------------------------------------------------------------------------
+ 
+ class TestOutputColumns:
++    """Test Output Columns."""
+     def test_all_expected_feature_columns_present(self):
++        """Test all expected feature columns present."""
+         fe = make_engineer()
+         result = fe.calculate_features(make_ohlcv(100))
+         for col in EXPECTED_COLUMNS:
+             assert col in result.columns, f"Column '{col}' missing from output"
+ 
+     def test_original_ohlcv_columns_preserved(self):
++        """Test original ohlcv columns preserved."""
+         fe = make_engineer()
+         result = fe.calculate_features(make_ohlcv(100))
+         for col in ["open", "high", "low", "close", "volume"]:
+@@ -76,13 +82,16 @@ class TestOutputColumns:
+ # ---------------------------------------------------------------------------
+ 
+ class TestNoNaN:
++    """Test No Na N."""
+     def test_output_contains_no_nan_values(self):
++        """Test output contains no nan values."""
+         fe = make_engineer()
+         result = fe.calculate_features(make_ohlcv(100))
+         nan_cols = result.columns[result.isna().any()].tolist()
+         assert nan_cols == [], f"NaN values found in columns: {nan_cols}"
+ 
+     def test_row_count_reduced_by_dropna(self):
++        """Test row count reduced by dropna."""
+         fe = make_engineer()
+         df = make_ohlcv(100)
+         result = fe.calculate_features(df)
+@@ -95,7 +104,9 @@ class TestNoNaN:
+ # ---------------------------------------------------------------------------
+ 
+ class TestRSI:
++    """Test RSI."""
+     def test_rsi_values_within_valid_range(self):
++        """Test rsi values within valid range."""
+         fe = make_engineer()
+         result = fe.calculate_features(make_ohlcv(150))
+         assert result["RSI"].min() >= 0.0
+@@ -107,7 +118,9 @@ class TestRSI:
+ # ---------------------------------------------------------------------------
+ 
+ class TestATR:
++    """Test ATR."""
+     def test_atr_values_are_non_negative(self):
++        """Test atr values are non negative."""
+         fe = make_engineer()
+         result = fe.calculate_features(make_ohlcv(150))
+         assert (result["ATR"] >= 0).all()
+@@ -118,12 +131,15 @@ class TestATR:
+ # ---------------------------------------------------------------------------
+ 
+ class TestBollingerBands:
++    """Test Bollinger Bands."""
+     def test_upper_band_above_or_equal_to_middle(self):
++        """Test upper band above or equal to middle."""
+         fe = make_engineer()
+         result = fe.calculate_features(make_ohlcv(150))
+         assert (result["BBU"] >= result["BBM"]).all()
+ 
+     def test_middle_band_above_or_equal_to_lower(self):
++        """Test middle band above or equal to lower."""
+         fe = make_engineer()
+         result = fe.calculate_features(make_ohlcv(150))
+         assert (result["BBM"] >= result["BBL"]).all()
+@@ -134,7 +150,9 @@ class TestBollingerBands:
+ # ---------------------------------------------------------------------------
+ 
+ class TestNoMutation:
++    """Test No Mutation."""
+     def test_original_dataframe_unchanged(self):
++        """Test original dataframe unchanged."""
+         fe = make_engineer()
+         df = make_ohlcv(100)
+         original_cols = list(df.columns)
+diff --git a/tests/unit/test_order_validator.py b/tests/unit/test_order_validator.py
+index d35d553..91f65e0 100644
+--- a/tests/unit/test_order_validator.py
++++ b/tests/unit/test_order_validator.py
+@@ -15,10 +15,16 @@ from risk.validator import OrderValidator
+ # ---------------------------------------------------------------------------
+ 
+ def make_validator() -> OrderValidator:
++    """Make validator."""
+     return OrderValidator()
+ 
+ 
+ def make_portfolio(cash: float = 100_000.0) -> VirtualPortfolio:
++    """Make portfolio.
++
++    Args:
++        cash: Description.
++    """
+     vp = VirtualPortfolio("test", starting_cash=cash)
+     return vp
+ 
+@@ -28,19 +34,24 @@ def make_portfolio(cash: float = 100_000.0) -> VirtualPortfolio:
+ # ---------------------------------------------------------------------------
+ 
+ class TestInvalidInputs:
++    """Test Invalid Inputs."""
+     def test_rejects_zero_qty(self):
++        """Test rejects zero qty."""
+         v = make_validator()
+         assert v.validate(make_portfolio(), "AAPL", 100.0, 0, "BUY") is False
+ 
+     def test_rejects_negative_qty(self):
++        """Test rejects negative qty."""
+         v = make_validator()
+         assert v.validate(make_portfolio(), "AAPL", 100.0, -5, "BUY") is False
+ 
+     def test_rejects_zero_price(self):
++        """Test rejects zero price."""
+         v = make_validator()
+         assert v.validate(make_portfolio(), "AAPL", 0.0, 10, "BUY") is False
+ 
+     def test_rejects_negative_price(self):
++        """Test rejects negative price."""
+         v = make_validator()
+         assert v.validate(make_portfolio(), "AAPL", -1.0, 10, "BUY") is False
+ 
+@@ -50,13 +61,16 @@ class TestInvalidInputs:
+ # ---------------------------------------------------------------------------
+ 
+ class TestBuyingPower:
++    """Test Buying Power."""
+     def test_rejects_buy_when_insufficient_cash(self):
++        """Test rejects buy when insufficient cash."""
+         v = make_validator()
+         vp = make_portfolio(cash=500)
+         # 10 shares @ 100 = $1000 > $500 cash
+         assert v.validate(vp, "AAPL", 100.0, 10, "BUY") is False
+ 
+     def test_accepts_buy_when_cash_exactly_covers_cost(self):
++        """Test accepts buy when cash exactly covers cost."""
+         v = make_validator()
+         vp = make_portfolio(cash=1_000)
+         # If we spend all 1,000, we violate the 20% concentration limit.
+@@ -64,12 +78,14 @@ class TestBuyingPower:
+         assert v.validate(vp, "AAPL", 100.0, 10, "BUY") is False
+ 
+     def test_accepts_buy_when_cash_exceeds_cost(self):
++        """Test accepts buy when cash exceeds cost."""
+         v = make_validator()
+         vp = make_portfolio(cash=10_000)
+         assert v.validate(vp, "AAPL", 100.0, 10, "BUY") is True
+ 
+     def test_no_cash_check_for_sell(self):
+         # Sells add cash; should not be blocked by insufficient cash
++        """Test no cash check for sell."""
+         v = make_validator()
+         vp = make_portfolio(cash=0)
+         assert v.validate(vp, "AAPL", 100.0, 10, "SELL") is True
+@@ -80,7 +96,9 @@ class TestBuyingPower:
+ # ---------------------------------------------------------------------------
+ 
+ class TestMaxOrderValue:
++    """Test Max Order Value."""
+     def test_rejects_buy_exceeding_max_order_value(self):
++        """Test rejects buy exceeding max order value."""
+         v = make_validator()
+         vp = make_portfolio(cash=100_000)
+         # 600 shares @ 100 = $60,000 > $50,000 limit
+@@ -90,12 +108,14 @@ class TestMaxOrderValue:
+         # MAX_ORDER_VALUE=$50k but MAX_POS_SIZE=$25k: a fresh $50k order always
+         # fails the position-size check before it can "pass" the order-value check.
+         # This test documents that the effective single-order buy ceiling is $25k.
++        """Test buy exactly at max order value rejected by position limit."""
+         v = make_validator()
+         vp = make_portfolio(cash=100_000)
+         # 500 shares @ $100 = $50,000 — hits MAX_POS_SIZE ($25k) first
+         assert v.validate(vp, "AAPL", 100.0, 500, "BUY") is False
+ 
+     def test_rejects_sell_exceeding_max_order_value(self):
++        """Test rejects sell exceeding max order value."""
+         v = make_validator()
+         vp = make_portfolio(cash=100_000)
+         # SELL is also subject to MAX_ORDER_VALUE
+@@ -107,7 +127,9 @@ class TestMaxOrderValue:
+ # ---------------------------------------------------------------------------
+ 
+ class TestMaxPositionSize:
++    """Test Max Position Size."""
+     def test_rejects_buy_that_pushes_position_over_limit(self):
++        """Test rejects buy that pushes position over limit."""
+         v = make_validator()
+         vp = make_portfolio(cash=100_000) # Equity = 100k + 20k = 120k. 20% of 120k = 24k
+         # Existing position: 200 shares @ 100 = $20,000
+@@ -116,6 +138,7 @@ class TestMaxPositionSize:
+         assert v.validate(vp, "AAPL", 100.0, 60, "BUY") is False
+ 
+     def test_accepts_buy_that_stays_within_position_limit(self):
++        """Test accepts buy that stays within position limit."""
+         v = make_validator()
+         vp = make_portfolio(cash=100_000) # Equity = 100k + 20k = 120k. 20% = 24k
+         # Existing: 200 shares @ 100 = $20,000
+@@ -124,6 +147,7 @@ class TestMaxPositionSize:
+         assert v.validate(vp, "AAPL", 100.0, 40, "BUY") is True
+ 
+     def test_new_position_within_limit_accepted(self):
++        """Test new position within limit accepted."""
+         v = make_validator()
+         vp = make_portfolio(cash=100_000)
+         # 100 shares @ 100 = $10,000 < $25,000
+@@ -135,13 +159,16 @@ class TestMaxPositionSize:
+ # ---------------------------------------------------------------------------
+ 
+ class TestHappyPath:
++    """Test Happy Path."""
+     def test_typical_valid_buy_order(self):
++        """Test typical valid buy order."""
+         v = make_validator()
+         vp = make_portfolio(cash=50_000)
+         # 50 shares @ 200 = $10,000 — within all limits
+         assert v.validate(vp, "MSFT", 200.0, 50, "BUY") is True
+ 
+     def test_typical_valid_sell_order(self):
++        """Test typical valid sell order."""
+         v = make_validator()
+         vp = make_portfolio(cash=0)
+         vp.positions["MSFT"] = {"qty": 50, "avg_price": 200.0}
+diff --git a/tests/unit/test_portfolio.py b/tests/unit/test_portfolio.py
+index b48312f..1e04874 100644
+--- a/tests/unit/test_portfolio.py
++++ b/tests/unit/test_portfolio.py
+@@ -14,14 +14,35 @@ from core.portfolio import VirtualPortfolio
+ # ---------------------------------------------------------------------------
+ 
+ def make_portfolio(cash: float = 100_000.0) -> VirtualPortfolio:
++    """Make portfolio.
++
++    Args:
++        cash: Description.
++    """
+     return VirtualPortfolio("test-portfolio", starting_cash=cash)
+ 
+ 
+ def buy_fill(symbol: str, qty: int, price: float, ts: str = "2024-01-01T00:00:00") -> dict:
++    """Buy fill.
++
++    Args:
++        symbol: Description.
++        qty: Description.
++        price: Description.
++        ts: Description.
++    """
+     return {"symbol": symbol, "qty": qty, "price": price, "side": "buy", "timestamp": ts}
+ 
+ 
+ def sell_fill(symbol: str, qty: int, price: float, ts: str = "2024-01-01T00:00:00") -> dict:
++    """Sell fill.
++
++    Args:
++        symbol: Description.
++        qty: Description.
++        price: Description.
++        ts: Description.
++    """
+     return {"symbol": symbol, "qty": qty, "price": price, "side": "sell", "timestamp": ts}
+ 
+ 
+@@ -30,16 +51,20 @@ def sell_fill(symbol: str, qty: int, price: float, ts: str = "2024-01-01T00:00:0
+ # ---------------------------------------------------------------------------
+ 
+ class TestInit:
++    """Test Init."""
+     def test_starting_cash_is_set(self):
++        """Test starting cash is set."""
+         vp = make_portfolio(50_000)
+         assert vp.cash == 50_000
+         assert vp.initial_cash == 50_000
+ 
+     def test_no_positions_at_start(self):
++        """Test no positions at start."""
+         vp = make_portfolio()
+         assert vp.positions == {}
+ 
+     def test_history_and_equity_curve_empty_at_start(self):
++        """Test history and equity curve empty at start."""
+         vp = make_portfolio()
+         assert vp.history == []
+         assert vp.equity_curve == []
+@@ -50,16 +75,20 @@ class TestInit:
+ # ---------------------------------------------------------------------------
+ 
+ class TestCanAfford:
++    """Test Can Afford."""
+     def test_returns_true_when_cash_is_sufficient(self):
++        """Test returns true when cash is sufficient."""
+         vp = make_portfolio(10_000)
+         assert vp.can_afford("AAPL", 10, 100.0) is True  # cost = 1000
+ 
+     def test_returns_false_when_cash_is_insufficient(self):
++        """Test returns false when cash is insufficient."""
+         vp = make_portfolio(500)
+         assert vp.can_afford("AAPL", 10, 100.0) is False  # cost = 1000
+ 
+     def test_sell_always_returns_true(self):
+         # Selling reduces position, always adds cash
++        """Test sell always returns true."""
+         vp = make_portfolio(0)
+         assert vp.can_afford("AAPL", -10, 100.0) is True
+ 
+@@ -69,7 +98,9 @@ class TestCanAfford:
+ # ---------------------------------------------------------------------------
+ 
+ class TestUpdateFromFillBuy:
++    """Test Update From Fill Buy."""
+     def test_creates_new_position_on_first_buy(self):
++        """Test creates new position on first buy."""
+         vp = make_portfolio()
+         vp.update_from_fill(buy_fill("AAPL", 10, 100.0))
+         assert "AAPL" in vp.positions
+@@ -77,11 +108,13 @@ class TestUpdateFromFillBuy:
+         assert vp.positions["AAPL"]["avg_price"] == 100.0
+ 
+     def test_cash_decreases_by_cost(self):
++        """Test cash decreases by cost."""
+         vp = make_portfolio(10_000)
+         vp.update_from_fill(buy_fill("AAPL", 10, 100.0))
+         assert vp.cash == 9_000
+ 
+     def test_average_price_weighted_correctly_on_second_buy(self):
++        """Test average price weighted correctly on second buy."""
+         vp = make_portfolio()
+         vp.update_from_fill(buy_fill("AAPL", 10, 100.0))  # 10 shares @ 100
+         vp.update_from_fill(buy_fill("AAPL", 10, 120.0))  # 10 shares @ 120
+@@ -90,6 +123,7 @@ class TestUpdateFromFillBuy:
+         assert vp.positions["AAPL"]["avg_price"] == 110.0
+ 
+     def test_average_price_unequal_quantities(self):
++        """Test average price unequal quantities."""
+         vp = make_portfolio()
+         vp.update_from_fill(buy_fill("AAPL", 20, 100.0))  # cost = 2000
+         vp.update_from_fill(buy_fill("AAPL", 10, 130.0))  # cost = 1300
+@@ -98,6 +132,7 @@ class TestUpdateFromFillBuy:
+         assert abs(vp.positions["AAPL"]["avg_price"] - 110.0) < 1e-6
+ 
+     def test_trade_appended_to_history(self):
++        """Test trade appended to history."""
+         vp = make_portfolio()
+         vp.update_from_fill(buy_fill("AAPL", 10, 100.0))
+         assert len(vp.history) == 1
+@@ -113,19 +148,23 @@ class TestUpdateFromFillBuy:
+ # ---------------------------------------------------------------------------
+ 
+ class TestUpdateFromFillSell:
++    """Test Update From Fill Sell."""
+     def test_sell_reduces_position_qty(self):
++        """Test sell reduces position qty."""
+         vp = make_portfolio()
+         vp.update_from_fill(buy_fill("AAPL", 20, 100.0))
+         vp.update_from_fill(sell_fill("AAPL", 10, 110.0))
+         assert vp.positions["AAPL"]["qty"] == 10
+ 
+     def test_sell_increases_cash(self):
++        """Test sell increases cash."""
+         vp = make_portfolio(10_000)
+         vp.update_from_fill(buy_fill("AAPL", 10, 100.0))  # cash -> 9000
+         vp.update_from_fill(sell_fill("AAPL", 10, 110.0))  # cash -> 9000 + 1100 = 10100
+         assert vp.cash == 10_100
+ 
+     def test_sell_to_zero_removes_position(self):
++        """Test sell to zero removes position."""
+         vp = make_portfolio()
+         vp.update_from_fill(buy_fill("AAPL", 10, 100.0))
+         vp.update_from_fill(sell_fill("AAPL", 10, 110.0))
+@@ -133,6 +172,7 @@ class TestUpdateFromFillSell:
+ 
+     def test_sell_avg_price_unchanged(self):
+         # avg_price is only updated on buys
++        """Test sell avg price unchanged."""
+         vp = make_portfolio()
+         vp.update_from_fill(buy_fill("AAPL", 20, 100.0))
+         vp.update_from_fill(sell_fill("AAPL", 10, 150.0))
+@@ -144,7 +184,9 @@ class TestUpdateFromFillSell:
+ # ---------------------------------------------------------------------------
+ 
+ class TestMultipleSymbols:
++    """Test Multiple Symbols."""
+     def test_positions_tracked_independently(self):
++        """Test positions tracked independently."""
+         vp = make_portfolio()
+         vp.update_from_fill(buy_fill("AAPL", 10, 100.0))
+         vp.update_from_fill(buy_fill("MSFT", 5, 200.0))
+@@ -152,6 +194,7 @@ class TestMultipleSymbols:
+         assert vp.positions["MSFT"]["qty"] == 5
+ 
+     def test_cash_reflects_all_trades(self):
++        """Test cash reflects all trades."""
+         vp = make_portfolio(10_000)
+         vp.update_from_fill(buy_fill("AAPL", 10, 100.0))  # -1000
+         vp.update_from_fill(buy_fill("MSFT", 5, 200.0))   # -1000
+@@ -163,23 +206,28 @@ class TestMultipleSymbols:
+ # ---------------------------------------------------------------------------
+ 
+ class TestGetMarketValue:
++    """Test Get Market Value."""
+     def test_zero_when_no_positions(self):
++        """Test zero when no positions."""
+         vp = make_portfolio()
+         assert vp.get_market_value({}) == 0.0
+ 
+     def test_uses_provided_prices(self):
++        """Test uses provided prices."""
+         vp = make_portfolio()
+         vp.update_from_fill(buy_fill("AAPL", 10, 100.0))
+         value = vp.get_market_value({"AAPL": 150.0})
+         assert value == 1_500.0
+ 
+     def test_falls_back_to_avg_price_when_price_missing(self):
++        """Test falls back to avg price when price missing."""
+         vp = make_portfolio()
+         vp.update_from_fill(buy_fill("AAPL", 10, 100.0))
+         value = vp.get_market_value({})  # no price provided
+         assert value == 1_000.0  # 10 * avg_price(100)
+ 
+     def test_sums_across_multiple_positions(self):
++        """Test sums across multiple positions."""
+         vp = make_portfolio()
+         vp.update_from_fill(buy_fill("AAPL", 10, 100.0))
+         vp.update_from_fill(buy_fill("MSFT", 5, 200.0))
+@@ -192,11 +240,14 @@ class TestGetMarketValue:
+ # ---------------------------------------------------------------------------
+ 
+ class TestCalculateTotalEquity:
++    """Test Calculate Total Equity."""
+     def test_equals_cash_with_no_positions(self):
++        """Test equals cash with no positions."""
+         vp = make_portfolio(50_000)
+         assert vp.calculate_total_equity({}) == 50_000
+ 
+     def test_includes_position_market_value(self):
++        """Test includes position market value."""
+         vp = make_portfolio(10_000)
+         vp.update_from_fill(buy_fill("AAPL", 10, 100.0))  # cash -> 9000
+         equity = vp.calculate_total_equity({"AAPL": 120.0})
+@@ -208,7 +259,9 @@ class TestCalculateTotalEquity:
+ # ---------------------------------------------------------------------------
+ 
+ class TestSnapshot:
++    """Test Snapshot."""
+     def test_snapshot_appends_to_equity_curve(self):
++        """Test snapshot appends to equity curve."""
+         vp = make_portfolio(50_000)
+         vp.snapshot({})
+         assert len(vp.equity_curve) == 1
+@@ -216,6 +269,7 @@ class TestSnapshot:
+         assert vp.equity_curve[0]["cash"] == 50_000
+ 
+     def test_multiple_snapshots_build_curve(self):
++        """Test multiple snapshots build curve."""
+         vp = make_portfolio(100_000)
+         vp.snapshot({})
+         vp.update_from_fill(buy_fill("AAPL", 10, 100.0))
+diff --git a/tests/unit/test_risk_engine.py b/tests/unit/test_risk_engine.py
+index 79507ca..795b212 100644
+--- a/tests/unit/test_risk_engine.py
++++ b/tests/unit/test_risk_engine.py
+@@ -37,18 +37,22 @@ def _seed_predictions(engine, correct_flags, returns):
+ # ---------------------------------------------------------------------------
+ 
+ class TestUpdateAccountState:
++    """Test Update Account State."""
+     def test_sets_equity_and_pnl(self):
++        """Test sets equity and pnl."""
+         engine = make_engine()
+         engine.update_account_state(equity=120_000, daily_pnl=2_000)
+         assert engine.current_equity == 120_000
+         assert engine.daily_pnl == 2_000
+ 
+     def test_derives_starting_equity_on_first_call(self):
++        """Test derives starting equity on first call."""
+         engine = make_engine()
+         engine.update_account_state(equity=103_000, daily_pnl=3_000)
+         assert engine.starting_equity == 100_000  # 103k - 3k
+ 
+     def test_does_not_override_starting_equity_on_second_call(self):
++        """Test does not override starting equity on second call."""
+         engine = make_engine()
+         engine.update_account_state(equity=103_000, daily_pnl=3_000)
+         engine.update_account_state(equity=105_000, daily_pnl=5_000)
+@@ -61,7 +65,9 @@ class TestUpdateAccountState:
+ # ---------------------------------------------------------------------------
+ 
+ class TestKillSwitchDrawdown:
++    """Test Kill Switch Drawdown."""
+     def test_activates_when_drawdown_exceeds_limit(self):
++        """Test activates when drawdown exceeds limit."""
+         engine = make_engine(MAX_DAILY_LOSS_PCT=0.03)
+         engine.update_account_state(equity=97_000, daily_pnl=-3_000)
+         assert engine.check_kill_switch() is True
+@@ -69,6 +75,7 @@ class TestKillSwitchDrawdown:
+ 
+     def test_activates_when_drawdown_exactly_at_limit(self):
+         # -3% on a 100k account = -3000 loss; starting_equity = 100k
++        """Test activates when drawdown exactly at limit."""
+         engine = make_engine(MAX_DAILY_LOSS_PCT=0.03)
+         engine.update_account_state(equity=100_000, daily_pnl=0)
+         # Manually set starting equity so the maths is exact
+@@ -77,17 +84,20 @@ class TestKillSwitchDrawdown:
+         assert engine.check_kill_switch() is True
+ 
+     def test_does_not_activate_when_drawdown_below_limit(self):
++        """Test does not activate when drawdown below limit."""
+         engine = make_engine(MAX_DAILY_LOSS_PCT=0.03)
+         engine.update_account_state(equity=98_000, daily_pnl=-2_000)
+         assert engine.check_kill_switch() is False
+         assert engine.is_kill_switch_active is False
+ 
+     def test_returns_false_when_starting_equity_is_zero(self):
++        """Test returns false when starting equity is zero."""
+         engine = make_engine()
+         # starting_equity defaults to 0.0 before any account update
+         assert engine.check_kill_switch() is False
+ 
+     def test_stays_active_once_triggered(self):
++        """Test stays active once triggered."""
+         engine = make_engine(MAX_DAILY_LOSS_PCT=0.03)
+         engine.update_account_state(equity=96_000, daily_pnl=-4_000)
+         engine.check_kill_switch()
+@@ -101,7 +111,9 @@ class TestKillSwitchDrawdown:
+ # ---------------------------------------------------------------------------
+ 
+ class TestKillSwitchConsecutiveLosses:
++    """Test Kill Switch Consecutive Losses."""
+     def test_activates_at_consecutive_loss_limit(self):
++        """Test activates at consecutive loss limit."""
+         engine = make_engine(MAX_CONSECUTIVE_LOSSES=5)
+         engine.update_account_state(equity=100_000, daily_pnl=0)
+         for _ in range(5):
+@@ -110,6 +122,7 @@ class TestKillSwitchConsecutiveLosses:
+         assert engine.is_kill_switch_active is True
+ 
+     def test_does_not_activate_below_consecutive_loss_limit(self):
++        """Test does not activate below consecutive loss limit."""
+         engine = make_engine(MAX_CONSECUTIVE_LOSSES=5)
+         engine.update_account_state(equity=100_000, daily_pnl=0)
+         for _ in range(4):
+@@ -117,6 +130,7 @@ class TestKillSwitchConsecutiveLosses:
+         assert engine.check_kill_switch() is False
+ 
+     def test_consecutive_losses_reset_on_winning_trade(self):
++        """Test consecutive losses reset on winning trade."""
+         engine = make_engine(MAX_CONSECUTIVE_LOSSES=5)
+         engine.update_account_state(equity=100_000, daily_pnl=0)
+         for _ in range(4):
+@@ -125,12 +139,14 @@ class TestKillSwitchConsecutiveLosses:
+         assert engine.consecutive_losses == 0
+ 
+     def test_loss_counter_increments_on_negative_pnl(self):
++        """Test loss counter increments on negative pnl."""
+         engine = make_engine()
+         engine.record_trade_result(-50)
+         engine.record_trade_result(-50)
+         assert engine.consecutive_losses == 2
+ 
+     def test_loss_counter_does_not_increment_on_breakeven(self):
++        """Test loss counter does not increment on breakeven."""
+         engine = make_engine()
+         engine.record_trade_result(0)
+         assert engine.consecutive_losses == 0
+@@ -141,13 +157,16 @@ class TestKillSwitchConsecutiveLosses:
+ # ---------------------------------------------------------------------------
+ 
+ class TestResetKillSwitch:
++    """Test Reset Kill Switch."""
+     def test_clears_kill_switch_flag(self):
++        """Test clears kill switch flag."""
+         engine = make_engine()
+         engine.is_kill_switch_active = True
+         engine.reset_kill_switch()
+         assert engine.is_kill_switch_active is False
+ 
+     def test_resets_consecutive_losses(self):
++        """Test resets consecutive losses."""
+         engine = make_engine()
+         engine.consecutive_losses = 7
+         engine.current_equity = 90_000
+@@ -155,6 +174,7 @@ class TestResetKillSwitch:
+         assert engine.consecutive_losses == 0
+ 
+     def test_re_anchors_starting_equity_to_current_equity(self):
++        """Test re anchors starting equity to current equity."""
+         engine = make_engine()
+         engine.current_equity = 95_000
+         engine.reset_kill_switch()
+@@ -167,13 +187,16 @@ class TestResetKillSwitch:
+ # ---------------------------------------------------------------------------
+ 
+ class TestCalculatePositionSize:
++    """Test Calculate Position Size."""
+     def test_returns_zero_when_kill_switch_active(self):
++        """Test returns zero when kill switch active."""
+         engine = make_engine()
+         engine.is_kill_switch_active = True
+         engine.current_equity = 100_000
+         assert engine.calculate_position_size(100.0, 95.0) == 0
+ 
+     def test_returns_zero_when_stop_equals_entry(self):
++        """Test returns zero when stop equals entry."""
+         engine = make_engine()
+         engine.current_equity = 100_000
+         assert engine.calculate_position_size(100.0, 100.0) == 0
+@@ -182,17 +205,20 @@ class TestCalculatePositionSize:
+         # equity=100k, risk_pct=1% => risk_amount=1000
+         # entry=100, stop=95 => risk_per_share=5
+         # units = floor(1000 / 5) = 200
++        """Test correct sizing with known inputs."""
+         engine = make_engine(RISK_PER_TRADE_PCT=0.01)
+         engine.current_equity = 100_000
+         assert engine.calculate_position_size(100.0, 95.0) == 200
+ 
+     def test_floors_fractional_units(self):
+         # risk_amount=1000, risk_per_share=3 => floor(333.33) = 333
++        """Test floors fractional units."""
+         engine = make_engine(RISK_PER_TRADE_PCT=0.01)
+         engine.current_equity = 100_000
+         assert engine.calculate_position_size(100.0, 97.0) == 333
+ 
+     def test_returns_zero_when_equity_is_zero(self):
++        """Test returns zero when equity is zero."""
+         engine = make_engine()
+         engine.current_equity = 0
+         assert engine.calculate_position_size(100.0, 95.0) == 0
+@@ -203,21 +229,26 @@ class TestCalculatePositionSize:
+ # ---------------------------------------------------------------------------
+ 
+ class TestValidateSignal:
++    """Test Validate Signal."""
+     def test_accepts_signal_in_normal_mode(self):
++        """Test accepts signal in normal mode."""
+         engine = make_engine()
+         assert engine.validate_signal({"symbol": "AAPL", "signal": "BUY"}) is True
+ 
+     def test_rejects_signal_when_kill_switch_active(self):
++        """Test rejects signal when kill switch active."""
+         engine = make_engine()
+         engine.is_kill_switch_active = True
+         assert engine.validate_signal({"symbol": "AAPL", "signal": "BUY"}) is False
+ 
+     def test_rejects_signal_when_manual_approval_mode_active(self):
++        """Test rejects signal when manual approval mode active."""
+         engine = make_engine()
+         engine.is_manual_approval_mode = True
+         assert engine.validate_signal({"symbol": "AAPL", "signal": "BUY"}) is False
+ 
+     def test_kill_switch_takes_priority_over_manual_mode(self):
++        """Test kill switch takes priority over manual mode."""
+         engine = make_engine()
+         engine.is_kill_switch_active = True
+         engine.is_manual_approval_mode = True
+@@ -229,28 +260,34 @@ class TestValidateSignal:
+ # ---------------------------------------------------------------------------
+ 
+ class TestRollingAccuracy:
++    """Test Rolling Accuracy."""
+     def test_returns_none_with_fewer_than_five_samples(self):
++        """Test returns none with fewer than five samples."""
+         engine = make_engine()
+         _seed_predictions(engine, [True, True, False, True], [0.01] * 4)
+         assert engine.get_rolling_accuracy() is None
+ 
+     def test_returns_one_when_all_correct(self):
++        """Test returns one when all correct."""
+         engine = make_engine()
+         _seed_predictions(engine, [True] * 10, [0.01] * 10)
+         assert engine.get_rolling_accuracy() == 1.0
+ 
+     def test_returns_zero_when_all_wrong(self):
++        """Test returns zero when all wrong."""
+         engine = make_engine()
+         _seed_predictions(engine, [False] * 10, [-0.01] * 10)
+         assert engine.get_rolling_accuracy() == 0.0
+ 
+     def test_correct_ratio_calculation(self):
++        """Test correct ratio calculation."""
+         engine = make_engine()
+         # 7 correct, 3 wrong => 0.7
+         _seed_predictions(engine, [True] * 7 + [False] * 3, [0.0] * 10)
+         assert abs(engine.get_rolling_accuracy() - 0.7) < 1e-9
+ 
+     def test_window_trims_to_20_samples(self):
++        """Test window trims to 20 samples."""
+         engine = make_engine()
+         # Feed 25 samples: first 5 are wrong, last 20 are correct
+         _seed_predictions(engine, [False] * 5 + [True] * 20, [0.0] * 25)
+@@ -263,7 +300,9 @@ class TestRollingAccuracy:
+ # ---------------------------------------------------------------------------
+ 
+ class TestRollingSharpe:
++    """Test Rolling Sharpe."""
+     def test_returns_none_with_fewer_than_five_samples(self):
++        """Test returns none with fewer than five samples."""
+         engine = make_engine()
+         _seed_predictions(engine, [True] * 3, [0.01, 0.02, 0.01])
+         assert engine.get_rolling_sharpe() is None
+@@ -275,11 +314,13 @@ class TestRollingSharpe:
+         # decimal constants like 0.01 accumulate rounding error and produce a
+         # non-zero (astronomically large) Sharpe — a known limitation in the
+         # current `if std_r == 0` check.
++        """Test returns none when all returns identical."""
+         engine = make_engine()
+         _seed_predictions(engine, [True] * 10, [0.0] * 10)
+         assert engine.get_rolling_sharpe() is None
+ 
+     def test_positive_sharpe_for_consistently_positive_returns(self):
++        """Test positive sharpe for consistently positive returns."""
+         engine = make_engine()
+         # All positive, with some variance
+         returns = [0.01, 0.02, 0.015, 0.025, 0.01, 0.02, 0.01, 0.03, 0.02, 0.015]
+@@ -289,6 +330,7 @@ class TestRollingSharpe:
+         assert sharpe > 0
+ 
+     def test_negative_sharpe_for_consistently_negative_returns(self):
++        """Test negative sharpe for consistently negative returns."""
+         engine = make_engine()
+         returns = [-0.01, -0.02, -0.015, -0.025, -0.01, -0.02, -0.01, -0.03, -0.02, -0.015]
+         _seed_predictions(engine, [False] * 10, returns)
+@@ -298,6 +340,7 @@ class TestRollingSharpe:
+ 
+     def test_sharpe_annualisation_factor(self):
+         # With a controlled dataset we can verify the annualisation (sqrt(252))
++        """Test sharpe annualisation factor."""
+         import math
+         engine = make_engine()
+         returns = [0.01, -0.01, 0.02, -0.02, 0.01, -0.01, 0.02, -0.02, 0.01, -0.01]
+@@ -315,7 +358,9 @@ class TestRollingSharpe:
+ # ---------------------------------------------------------------------------
+ 
+ class TestModelPerformanceRollback:
++    """Test Model Performance Rollback."""
+     def _engine_with_low_sharpe(self):
++        """Engine with low sharpe."""
+         engine = make_engine(ROLLBACK_MIN_SHARPE=0.5)
+         # Strongly negative returns to force a negative Sharpe
+         returns = [-0.02, -0.03, -0.01, -0.04, -0.02, -0.03, -0.01, -0.04, -0.02, -0.03]
+@@ -323,6 +368,7 @@ class TestModelPerformanceRollback:
+         return engine
+ 
+     def _engine_with_low_accuracy(self):
++        """Engine with low accuracy."""
+         engine = make_engine(ROLLBACK_MIN_ACCURACY=0.50)
+         # 2 correct out of 10 => accuracy=0.2
+         returns = [0.01] * 10
+@@ -330,18 +376,21 @@ class TestModelPerformanceRollback:
+         return engine
+ 
+     def test_activates_manual_mode_on_low_sharpe(self):
++        """Test activates manual mode on low sharpe."""
+         engine = self._engine_with_low_sharpe()
+         triggered = engine.check_model_performance()
+         assert triggered is True
+         assert engine.is_manual_approval_mode is True
+ 
+     def test_activates_manual_mode_on_low_accuracy(self):
++        """Test activates manual mode on low accuracy."""
+         engine = self._engine_with_low_accuracy()
+         triggered = engine.check_model_performance()
+         assert triggered is True
+         assert engine.is_manual_approval_mode is True
+ 
+     def test_does_not_double_trigger_when_already_in_manual_mode(self):
++        """Test does not double trigger when already in manual mode."""
+         engine = self._engine_with_low_sharpe()
+         engine.check_model_performance()
+         assert engine.is_manual_approval_mode is True
+@@ -349,6 +398,7 @@ class TestModelPerformanceRollback:
+         assert engine.check_model_performance() is False
+ 
+     def test_no_rollback_when_metrics_are_healthy(self):
++        """Test no rollback when metrics are healthy."""
+         engine = make_engine(ROLLBACK_MIN_SHARPE=0.5, ROLLBACK_MIN_ACCURACY=0.50)
+         returns = [0.01, 0.02, 0.015, 0.025, 0.01, 0.02, 0.01, 0.03, 0.02, 0.015]
+         _seed_predictions(engine, [True] * 10, returns)
+@@ -357,6 +407,7 @@ class TestModelPerformanceRollback:
+         assert engine.is_manual_approval_mode is False
+ 
+     def test_reset_manual_approval_mode_re_enables_auto_execution(self):
++        """Test reset manual approval mode re enables auto execution."""
+         engine = self._engine_with_low_accuracy()
+         engine.check_model_performance()
+         assert engine.is_manual_approval_mode is True
+diff --git a/tests/unit/test_slippage.py b/tests/unit/test_slippage.py
+index 06714b5..2963233 100644
+--- a/tests/unit/test_slippage.py
++++ b/tests/unit/test_slippage.py
+@@ -18,6 +18,11 @@ from simulation.slippage import SlippageModel
+ # ---------------------------------------------------------------------------
+ 
+ def make_model(base_bps: int = 5) -> SlippageModel:
++    """Make model.
++
++    Args:
++        base_bps: Description.
++    """
+     return SlippageModel(base_bps=base_bps)
+ 
+ 
+@@ -26,19 +31,23 @@ def make_model(base_bps: int = 5) -> SlippageModel:
+ # ---------------------------------------------------------------------------
+ 
+ class TestSlippageDirection:
++    """Test Slippage Direction."""
+     def test_buy_price_is_above_decision_price(self):
++        """Test buy price is above decision price."""
+         random.seed(42)
+         model = make_model(base_bps=5)
+         result = model.calculate_price(100.0, "BUY", 100)
+         assert result > 100.0
+ 
+     def test_sell_price_is_below_decision_price(self):
++        """Test sell price is below decision price."""
+         random.seed(42)
+         model = make_model(base_bps=5)
+         result = model.calculate_price(100.0, "SELL", 100)
+         assert result < 100.0
+ 
+     def test_buy_direction_holds_across_many_seeds(self):
++        """Test buy direction holds across many seeds."""
+         model = make_model(base_bps=5)
+         for seed in range(50):
+             random.seed(seed)
+@@ -46,6 +55,7 @@ class TestSlippageDirection:
+             assert result > 200.0, f"BUY slippage went wrong direction at seed={seed}"
+ 
+     def test_sell_direction_holds_across_many_seeds(self):
++        """Test sell direction holds across many seeds."""
+         model = make_model(base_bps=5)
+         for seed in range(50):
+             random.seed(seed)
+@@ -58,15 +68,19 @@ class TestSlippageDirection:
+ # ---------------------------------------------------------------------------
+ 
+ class TestSlippageEdgeCases:
++    """Test Slippage Edge Cases."""
+     def test_zero_decision_price_returned_unchanged(self):
++        """Test zero decision price returned unchanged."""
+         model = make_model()
+         assert model.calculate_price(0.0, "BUY", 100) == 0.0
+ 
+     def test_negative_decision_price_returned_unchanged(self):
++        """Test negative decision price returned unchanged."""
+         model = make_model()
+         assert model.calculate_price(-50.0, "SELL", 10) == -50.0
+ 
+     def test_result_is_rounded_to_two_decimal_places(self):
++        """Test result is rounded to two decimal places."""
+         random.seed(0)
+         model = make_model()
+         result = model.calculate_price(100.0, "BUY", 10)
+@@ -78,8 +92,10 @@ class TestSlippageEdgeCases:
+ # ---------------------------------------------------------------------------
+ 
+ class TestBaseBps:
++    """Test Base Bps."""
+     def test_higher_base_bps_produces_larger_slippage_on_buy(self):
+         # With the noise seeded identically, higher bps must produce a higher buy price
++        """Test higher base bps produces larger slippage on buy."""
+         low_model = make_model(base_bps=1)
+         high_model = make_model(base_bps=50)
+ 
+@@ -91,6 +107,7 @@ class TestBaseBps:
+         assert high_result > low_result
+ 
+     def test_higher_base_bps_produces_lower_sell_price(self):
++        """Test higher base bps produces lower sell price."""
+         low_model = make_model(base_bps=1)
+         high_model = make_model(base_bps=50)
+ 
+@@ -107,10 +124,12 @@ class TestBaseBps:
+ # ---------------------------------------------------------------------------
+ 
+ class TestMarketImpact:
++    """Test Market Impact."""
+     def test_larger_qty_produces_higher_buy_price(self):
+         # The impact formula is `(qty / 10_000) * 0.00005`, so the difference
+         # only survives rounding to 2 dp when quantities differ by a large
+         # enough factor.  Use qty=100 vs qty=1_000_000 for a clear $0.50 gap.
++        """Test larger qty produces higher buy price."""
+         model = make_model(base_bps=5)
+ 
+         random.seed(7)
+diff --git a/tests/unit/test_sma_crossover.py b/tests/unit/test_sma_crossover.py
+index 9c509e5..a5bc4cc 100644
+--- a/tests/unit/test_sma_crossover.py
++++ b/tests/unit/test_sma_crossover.py
+@@ -26,15 +26,26 @@ BASE_CONFIG = {
+ 
+ 
+ def make_strategy(**overrides) -> SMACrossover:
++    """Make strategy."""
+     config = {**BASE_CONFIG, **overrides}
+     return SMACrossover(config)
+ 
+ 
+ def tick(price: float) -> dict:
++    """Tick.
++
++    Args:
++        price: Description.
++    """
+     return {"price": price, "timestamp": "2024-01-01T00:00:00"}
+ 
+ 
+ def run(coro):
++    """Run.
++
++    Args:
++        coro: Description.
++    """
+     return asyncio.get_event_loop().run_until_complete(coro)
+ 
+ 
+@@ -51,17 +62,21 @@ async def feed_ticks(strategy, prices):
+ # ---------------------------------------------------------------------------
+ 
+ class TestWarmup:
++    """Test Warmup."""
+     def test_returns_none_before_slow_period_ticks(self):
++        """Test returns none before slow period ticks."""
+         s = make_strategy()
+         # Feed SLOW - 1 ticks — not enough to compute slow SMA
+         signals = [run(s.on_tick(tick(100.0))) for _ in range(SLOW - 1)]
+         assert all(sig is None for sig in signals)
+ 
+     def test_zero_price_tick_returns_none(self):
++        """Test zero price tick returns none."""
+         s = make_strategy()
+         assert run(s.on_tick(tick(0.0))) is None
+ 
+     def test_negative_price_tick_returns_none(self):
++        """Test negative price tick returns none."""
+         s = make_strategy()
+         assert run(s.on_tick(tick(-5.0))) is None
+ 
+@@ -71,7 +86,9 @@ class TestWarmup:
+ # ---------------------------------------------------------------------------
+ 
+ class TestGoldenCross:
++    """Test Golden Cross."""
+     def test_emits_buy_signal_on_golden_cross(self):
++        """Test emits buy signal on golden cross."""
+         s = make_strategy()
+         # Establish a downtrend (fast < slow), then flip upward
+         # slow_period=10, fast_period=5
+@@ -92,6 +109,7 @@ class TestGoldenCross:
+         assert sig["model_id"] == "sma-test"
+ 
+     def test_buy_signal_contains_required_fields(self):
++        """Test buy signal contains required fields."""
+         s = make_strategy()
+         falling = [100.0, 99.0, 98.0, 97.0, 96.0, 95.0, 94.0, 93.0, 92.0, 91.0]
+         for p in falling:
+@@ -112,7 +130,9 @@ class TestGoldenCross:
+ # ---------------------------------------------------------------------------
+ 
+ class TestDeathCross:
++    """Test Death Cross."""
+     def test_emits_sell_signal_on_death_cross(self):
++        """Test emits sell signal on death cross."""
+         s = make_strategy()
+         # Establish an uptrend first (fast > slow)
+         rising = [100.0, 101.0, 102.0, 103.0, 104.0, 105.0, 106.0, 107.0, 108.0, 109.0]
+@@ -134,7 +154,9 @@ class TestDeathCross:
+ # ---------------------------------------------------------------------------
+ 
+ class TestDuplicateSuppression:
++    """Test Duplicate Suppression."""
+     def test_no_duplicate_buy_when_already_long(self):
++        """Test no duplicate buy when already long."""
+         s = make_strategy()
+         # Get to LONG state
+         falling = [100.0, 99.0, 98.0, 97.0, 96.0, 95.0, 94.0, 93.0, 92.0, 91.0]
+@@ -150,6 +172,7 @@ class TestDuplicateSuppression:
+         assert buy_count == 1, f"Expected exactly 1 BUY but got {buy_count}"
+ 
+     def test_no_duplicate_sell_when_already_short(self):
++        """Test no duplicate sell when already short."""
+         s = make_strategy()
+         # Get to SHORT state via a death cross
+         rising = [100.0, 101.0, 102.0, 103.0, 104.0, 105.0, 106.0, 107.0, 108.0, 109.0]
+@@ -170,7 +193,9 @@ class TestDuplicateSuppression:
+ # ---------------------------------------------------------------------------
+ 
+ class TestOnBar:
++    """Test On Bar."""
+     def test_on_bar_returns_none(self):
++        """Test on bar returns none."""
+         s = make_strategy()
+         result = run(s.on_bar({"open": 100, "high": 101, "low": 99, "close": 100, "volume": 1000}))
+         assert result is None

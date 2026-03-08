@@ -1,0 +1,874 @@
+diff --git a/api/server.py b/api/server.py
+index e0234bd..d003ada 100644
+--- a/api/server.py
++++ b/api/server.py
+@@ -65,6 +65,7 @@ if UI_DIR.exists():
+ # ============ Request/Response Models ============
+ 
+ class CreateRepoRequest(BaseModel):
++    """Create Repo Request."""
+     token: Optional[str] = None
+     name: str
+     description: Optional[str] = ""
+@@ -72,6 +73,7 @@ class CreateRepoRequest(BaseModel):
+ 
+ 
+ class CreateRepoResponse(BaseModel):
++    """Create Repo Response."""
+     success: bool
+     name: str
+     url: str
+@@ -81,16 +83,19 @@ class CreateRepoResponse(BaseModel):
+ 
+ 
+ class ValidateTokenRequest(BaseModel):
++    """Validate Token Request."""
+     token: Optional[str] = None
+ 
+ 
+ class ValidateTokenResponse(BaseModel):
++    """Validate Token Response."""
+     valid: bool
+     username: Optional[str] = None
+     message: Optional[str] = None
+ 
+ 
+ class PushFilesRequest(BaseModel):
++    """Push Files Request."""
+     token: Optional[str] = None
+     repo_full_name: str
+     files: dict  # {"path": "content", ...}
+@@ -98,6 +103,7 @@ class PushFilesRequest(BaseModel):
+ 
+ 
+ class StartRunRequest(BaseModel):
++    """Start Run Request."""
+     gemini_key: Optional[str] = None
+     github_token: Optional[str] = None
+     github_username: Optional[str] = None
+@@ -107,6 +113,11 @@ class StartRunRequest(BaseModel):
+ 
+     @validator('app_idea')
+     def validate_app_idea(cls, v):
++        """Validate app idea.
++
++        Args:
++            v: Description.
++        """
+         v = v.strip()
+         if len(v) < 20:
+             raise ValueError('App idea must be at least 20 characters')
+@@ -116,23 +127,27 @@ class StartRunRequest(BaseModel):
+ 
+ 
+ class EnhanceIdeaRequest(BaseModel):
++    """Enhance Idea Request."""
+     gemini_key: Optional[str] = None
+     app_idea: str
+     tech_preferences: Optional[str] = None
+ 
+ 
+ class EnhanceIdeaResponse(BaseModel):
++    """Enhance Idea Response."""
+     success: bool
+     enhanced_idea: Optional[dict] = None
+     message: Optional[str] = None
+ 
+ 
+ class GeneratePRDRequest(BaseModel):
++    """Generate PRDRequest."""
+     gemini_key: Optional[str] = None
+     enhanced_idea: dict
+ 
+ 
+ class GeneratePRDResponse(BaseModel):
++    """Generate PRDResponse."""
+     success: bool
+     prd: Optional[dict] = None
+     prd_markdown: Optional[str] = None
+@@ -425,6 +440,7 @@ async def stream_run_progress(run_id: str):
+         raise HTTPException(status_code=404, detail="Run not found")
+ 
+     async def event_generator():
++        """Event generator."""
+         queue = _run_events.get(run_id)
+         if not queue:
+             return
+@@ -475,6 +491,14 @@ def _execute_pipeline(run_id: str, request: StartRunRequest):
+     event_queue = _run_events[run_id]
+ 
+     def emit(step: str, status: str, detail: str = "", data: Any = None):
++        """Emit.
++
++        Args:
++            step: Description.
++            status: Description.
++            detail: Description.
++            data: Description.
++        """
+         run_state["status"] = status
+         run_state["steps"][step] = {"status": status, "detail": detail}
+         if data:
+@@ -558,6 +582,11 @@ def _execute_pipeline(run_id: str, request: StartRunRequest):
+         runner = AntigravityRunner()
+ 
+         def on_impl_progress(progress_data):
++            """On impl progress.
++
++            Args:
++                progress_data: Description.
++            """
+             emit("implement", "in_progress",
+                  f"Feature {progress_data.get('current_feature_index', 0)}/{progress_data.get('total_features', 0)}: "
+                  f"{progress_data.get('current_feature_name', '')}",
+diff --git a/core/config.py b/core/config.py
+index a48441f..bf756da 100644
+--- a/core/config.py
++++ b/core/config.py
+@@ -18,6 +18,7 @@ class Config:
+     """Central configuration management."""
+ 
+     def __init__(self):
++        """Init."""
+         self.base_dir = Path(__file__).parent.parent
+         self.data_dir = self.base_dir / "data"
+         self.logs_dir = self.base_dir / "logs"
+diff --git a/core/orchestrator.py b/core/orchestrator.py
+index f6fa754..4f4e4fb 100644
+--- a/core/orchestrator.py
++++ b/core/orchestrator.py
+@@ -178,6 +178,7 @@ class Orchestrator:
+     """Main orchestration engine with retry logic and state management."""
+ 
+     def __init__(self):
++        """Init."""
+         self.github = GitHubService()
+         self.gemini = GeminiClient()
+         self.antigravity = AntigravityRunner()
+diff --git a/core/settings.py b/core/settings.py
+index 0769650..8017f33 100644
+--- a/core/settings.py
++++ b/core/settings.py
+@@ -64,16 +64,19 @@ class Settings(BaseSettings):
+ 
+     @property
+     def project_storage(self) -> Path:
++        """Project storage."""
+         return Path(self.project_storage_path)
+ 
+     @property
+     def cors_origin_list(self) -> list:
++        """Cors origin list."""
+         if self.cors_origins == "*":
+             return ["*"]
+         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
+ 
+     @property
+     def is_production(self) -> bool:
++        """Is production."""
+         return self.environment == "production"
+ 
+     model_config = {
+diff --git a/modules/antigravity_runner.py b/modules/antigravity_runner.py
+index c14ce77..25efaa0 100644
+--- a/modules/antigravity_runner.py
++++ b/modules/antigravity_runner.py
+@@ -24,6 +24,11 @@ class ImplementationProgress:
+     """Tracks implementation progress for real-time reporting."""
+ 
+     def __init__(self, total_features: int):
++        """Init.
++
++        Args:
++            total_features: Description.
++        """
+         self.total_features = total_features
+         self.current_feature_index = 0
+         self.current_feature_name = ""
+@@ -49,6 +54,7 @@ class ImplementationProgress:
+                 logger.warning(f"Progress callback error: {e}")
+ 
+     def to_dict(self) -> Dict[str, Any]:
++        """To dict."""
+         return {
+             "total_features": self.total_features,
+             "current_feature_index": self.current_feature_index,
+@@ -65,6 +71,7 @@ class AntigravityRunner:
+     """Runs Claude Code for project implementation driven by PRD features."""
+ 
+     def __init__(self):
++        """Init."""
+         self.claude_path = config.claude_code_path
+         self.timeout = config.code_execution_timeout
+         self.per_feature_timeout = min(self.timeout // 2, 300)  # Max 5min per feature
+@@ -281,6 +288,11 @@ Instructions:
+         features_failed = []
+ 
+         def log(msg: str):
++            """Log.
++
++            Args:
++                msg: Description.
++            """
+             log_lines.append(f"[{time.strftime('%H:%M:%S')}] {msg}")
+             logger.info(msg)
+ 
+diff --git a/modules/gemini_client.py b/modules/gemini_client.py
+index 4b17dbe..fb67a63 100644
+--- a/modules/gemini_client.py
++++ b/modules/gemini_client.py
+@@ -21,6 +21,11 @@ class GeminiClient:
+     """Client for Google Gemini API."""
+ 
+     def __init__(self, api_key: Optional[str] = None):
++        """Init.
++
++        Args:
++            api_key: Description.
++        """
+         auth_key = api_key or config.gemini_api_key
+         
+         # We don't raise error here to allow fallback usage even without key
+diff --git a/modules/github_service.py b/modules/github_service.py
+index 0602d7d..350a4b4 100644
+--- a/modules/github_service.py
++++ b/modules/github_service.py
+@@ -17,6 +17,7 @@ class GitHubService:
+     """Manages GitHub repository operations."""
+     
+     def __init__(self):
++        """Init."""
+         if not config.github_token:
+             raise ValueError("GitHub token not configured")
+         
+diff --git a/modules/linkedin_service.py b/modules/linkedin_service.py
+index 9bde21f..4506456 100644
+--- a/modules/linkedin_service.py
++++ b/modules/linkedin_service.py
+@@ -17,6 +17,7 @@ class LinkedInService:
+     API_BASE = "https://api.linkedin.com/v2"
+     
+     def __init__(self):
++        """Init."""
+         if not config.linkedin_access_token:
+             logger.warning("LinkedIn access token not configured")
+         
+diff --git a/scripts/bundle-python.py b/scripts/bundle-python.py
+index cd77480..886cb60 100755
+--- a/scripts/bundle-python.py
++++ b/scripts/bundle-python.py
+@@ -15,6 +15,7 @@ from pathlib import Path
+ 
+ # Colors for terminal output
+ class Colors:
++    """Colors."""
+     GREEN = '\033[92m'
+     YELLOW = '\033[93m'
+     RED = '\033[91m'
+diff --git a/start.py b/start.py
+index 997982f..d1d5bb8 100644
+--- a/start.py
++++ b/start.py
+@@ -15,6 +15,7 @@ from pathlib import Path
+ 
+ # Colors for terminal output
+ class Colors:
++    """Colors."""
+     GREEN = '\033[92m'
+     YELLOW = '\033[93m'
+     RED = '\033[91m'
+diff --git a/tests/test_api.py b/tests/test_api.py
+index ad6ee98..86690d6 100644
+--- a/tests/test_api.py
++++ b/tests/test_api.py
+@@ -24,6 +24,7 @@ client = TestClient(app)
+ # ============ Health & Root ============
+ 
+ class TestHealthEndpoint:
++    """TestHealthEndpoint."""
+     def test_health_check(self):
+         response = client.get("/health")
+         assert response.status_code == 200
+@@ -37,6 +38,7 @@ class TestHealthEndpoint:
+ # ============ Helper Function Tests ============
+ 
+ class TestSanitizeRepoName:
++    """TestSanitizeRepoName."""
+     def test_basic_name(self):
+         assert sanitize_repo_name("My Project") == "my-project"
+ 
+@@ -60,6 +62,7 @@ class TestSanitizeRepoName:
+ # ============ Enhance Idea Endpoint ============
+ 
+ class TestEnhanceIdeaEndpoint:
++    """TestEnhanceIdeaEndpoint."""
+     @patch("api.server.GeminiClient")
+     def test_enhance_idea_success(self, mock_gemini_cls):
+         mock_client = MagicMock()
+@@ -111,6 +114,7 @@ class TestEnhanceIdeaEndpoint:
+ # ============ Generate PRD Endpoint ============
+ 
+ class TestGeneratePRDEndpoint:
++    """TestGeneratePRDEndpoint."""
+     @patch("api.server.GeminiClient")
+     def test_generate_prd_success(self, mock_gemini_cls):
+         mock_client = MagicMock()
+@@ -149,6 +153,7 @@ class TestGeneratePRDEndpoint:
+ # ============ Validate Token Endpoint ============
+ 
+ class TestValidateTokenEndpoint:
++    """TestValidateTokenEndpoint."""
+     @patch("api.server.Github")
+     def test_valid_token(self, mock_github_cls):
+         mock_user = MagicMock()
+@@ -179,6 +184,7 @@ class TestValidateTokenEndpoint:
+ # ============ Create Repo Endpoint ============
+ 
+ class TestCreateRepoEndpoint:
++    """TestCreateRepoEndpoint."""
+     @patch("api.server.repo_exists", return_value=False)
+     @patch("api.server.Github")
+     def test_create_repo_success(self, mock_github_cls, mock_exists):
+@@ -222,6 +228,7 @@ class TestCreateRepoEndpoint:
+ # ============ Run Endpoints ============
+ 
+ class TestStartRunEndpoint:
++    """TestStartRunEndpoint."""
+     def test_start_run_validation_short_idea(self):
+         response = client.post("/api/run", json={
+             "gemini_key": "key",
+@@ -260,6 +267,7 @@ class TestStartRunEndpoint:
+ # ============ Auth Endpoints ============
+ 
+ class TestAuthEndpoints:
++    """TestAuthEndpoints."""
+     @patch("api.server.get_github_authorize_url")
+     def test_auth_github_redirect(self, mock_get_url):
+         mock_get_url.return_value = "https://github.com/login/oauth/authorize?client_id=test"
+@@ -321,6 +329,7 @@ class TestAuthEndpoints:
+ # ============ Runs List Endpoint ============
+ 
+ class TestRunsListEndpoint:
++    """TestRunsListEndpoint."""
+     def test_list_runs_no_auth(self):
+         response = client.get("/api/runs")
+         assert response.status_code == 401
+@@ -329,6 +338,7 @@ class TestRunsListEndpoint:
+ # ============ Push Files Endpoint ============
+ 
+ class TestPushFilesEndpoint:
++    """TestPushFilesEndpoint."""
+     @patch("api.server.Github")
+     def test_push_files_success(self, mock_github_cls):
+         mock_repo = MagicMock()
+diff --git a/tests/test_e2e_live.py b/tests/test_e2e_live.py
+index 1462532..35136be 100644
+--- a/tests/test_e2e_live.py
++++ b/tests/test_e2e_live.py
+@@ -1,3 +1,4 @@
++"""Test e2e live module."""
+ import requests
+ import json
+ import time
+@@ -5,6 +6,7 @@ import time
+ BASE_URL = "http://127.0.0.1:8000"
+ 
+ def test_health():
++    """Test health."""
+     print("Testing /health...")
+     try:
+         resp = requests.get(f"{BASE_URL}/health")
+@@ -16,6 +18,7 @@ def test_health():
+         return False
+ 
+ def test_enhance_idea():
++    """Test enhance idea."""
+     print("\nTesting /api/enhance-idea...")
+     payload = {
+         "gemini_key": "dummy_key", # Will fall back to simulation if invalid/missing
+@@ -38,6 +41,11 @@ def test_enhance_idea():
+         return None
+ 
+ def test_generate_prd(sample_enhanced_idea):
++    """Test generate prd.
++
++    Args:
++        sample_enhanced_idea: Description.
++    """
+     print("\nTesting /api/generate-prd...")
+     if not sample_enhanced_idea:
+         print("Skipping PRD test (no enhanced idea)")
+diff --git a/tests/test_gemini_client.py b/tests/test_gemini_client.py
+index d250ee4..e39062a 100644
+--- a/tests/test_gemini_client.py
++++ b/tests/test_gemini_client.py
+@@ -31,15 +31,32 @@ def configured_client(mock_gemini_model):
+ 
+ 
+ class TestEnhanceIdea:
++    """Test Enhance Idea."""
+     def test_empty_idea_raises(self, client):
++        """Test empty idea raises.
++
++        Args:
++            client: Description.
++        """
+         with pytest.raises(ValueError, match="cannot be empty"):
+             client.enhance_idea("")
+ 
+     def test_none_idea_raises(self, client):
++        """Test none idea raises.
++
++        Args:
++            client: Description.
++        """
+         with pytest.raises(ValueError, match="cannot be empty"):
+             client.enhance_idea(None)
+ 
+     def test_fallback_returns_structured_dict(self, client, sample_app_idea):
++        """Test fallback returns structured dict.
++
++        Args:
++            client: Description.
++            sample_app_idea: Description.
++        """
+         result = client.enhance_idea(sample_app_idea)
+         assert "title" in result
+         assert "description" in result
+@@ -51,10 +68,23 @@ class TestEnhanceIdea:
+         assert isinstance(result["suggested_tech_stack"], dict)
+ 
+     def test_fallback_with_tech_prefs(self, client, sample_app_idea):
++        """Test fallback with tech prefs.
++
++        Args:
++            client: Description.
++            sample_app_idea: Description.
++        """
+         result = client.enhance_idea(sample_app_idea, tech_preferences="Use Rust and React")
+         assert result["suggested_tech_stack"].get("notes") == "Use Rust and React"
+ 
+     def test_configured_client_uses_model(self, configured_client, sample_app_idea, sample_enhanced_idea):
++        """Test configured client uses model.
++
++        Args:
++            configured_client: Description.
++            sample_app_idea: Description.
++            sample_enhanced_idea: Description.
++        """
+         configured_client.model.generate_content.return_value = MagicMock(
+             text=json.dumps(sample_enhanced_idea)
+         )
+@@ -63,6 +93,12 @@ class TestEnhanceIdea:
+         configured_client.model.generate_content.assert_called_once()
+ 
+     def test_configured_client_falls_back_on_error(self, configured_client, sample_app_idea):
++        """Test configured client falls back on error.
++
++        Args:
++            configured_client: Description.
++            sample_app_idea: Description.
++        """
+         configured_client.model.generate_content.side_effect = Exception("API error")
+         result = configured_client.enhance_idea(sample_app_idea)
+         # Should still return a valid structure
+@@ -71,11 +107,23 @@ class TestEnhanceIdea:
+ 
+ 
+ class TestGeneratePRD:
++    """Test Generate PRD."""
+     def test_missing_title_raises(self, client):
++        """Test missing title raises.
++
++        Args:
++            client: Description.
++        """
+         with pytest.raises(ValueError, match="must have a title"):
+             client.generate_prd({})
+ 
+     def test_fallback_prd_has_epics(self, client, sample_enhanced_idea):
++        """Test fallback prd has epics.
++
++        Args:
++            client: Description.
++            sample_enhanced_idea: Description.
++        """
+         result = client.generate_prd(sample_enhanced_idea)
+         assert "prd" in result
+         assert "prd_markdown" in result
+@@ -86,12 +134,24 @@ class TestGeneratePRD:
+         assert any("Setup" in n or "Infrastructure" in n for n in epic_names)
+ 
+     def test_fallback_prd_has_architecture(self, client, sample_enhanced_idea):
++        """Test fallback prd has architecture.
++
++        Args:
++            client: Description.
++            sample_enhanced_idea: Description.
++        """
+         result = client.generate_prd(sample_enhanced_idea)
+         arch = result["prd"]["technical_architecture"]
+         assert arch.get("overview")
+         assert len(arch.get("components", [])) > 0
+ 
+     def test_fallback_prd_has_nfrs(self, client, sample_enhanced_idea):
++        """Test fallback prd has nfrs.
++
++        Args:
++            client: Description.
++            sample_enhanced_idea: Description.
++        """
+         result = client.generate_prd(sample_enhanced_idea)
+         nfr = result["prd"]["non_functional_requirements"]
+         assert "performance" in nfr
+@@ -99,6 +159,13 @@ class TestGeneratePRD:
+         assert "error_handling" in nfr
+ 
+     def test_configured_client_generates_prd(self, configured_client, sample_enhanced_idea, sample_prd):
++        """Test configured client generates prd.
++
++        Args:
++            configured_client: Description.
++            sample_enhanced_idea: Description.
++            sample_prd: Description.
++        """
+         configured_client.model.generate_content.return_value = MagicMock(
+             text=json.dumps(sample_prd)
+         )
+@@ -107,32 +174,64 @@ class TestGeneratePRD:
+ 
+ 
+ class TestParseJsonResponse:
++    """Test Parse Json Response."""
+     def test_parse_direct_json(self, client):
++        """Test parse direct json.
++
++        Args:
++            client: Description.
++        """
+         result = client._parse_json_response('{"key": "value"}')
+         assert result == {"key": "value"}
+ 
+     def test_parse_markdown_fenced(self, client):
++        """Test parse markdown fenced.
++
++        Args:
++            client: Description.
++        """
+         text = '```json\n{"key": "value"}\n```'
+         result = client._parse_json_response(text)
+         assert result == {"key": "value"}
+ 
+     def test_parse_json_in_text(self, client):
++        """Test parse json in text.
++
++        Args:
++            client: Description.
++        """
+         text = 'Here is the result: {"key": "value"} and more text'
+         result = client._parse_json_response(text)
+         assert result == {"key": "value"}
+ 
+     def test_parse_invalid_returns_none(self, client):
++        """Test parse invalid returns none.
++
++        Args:
++            client: Description.
++        """
+         result = client._parse_json_response("not json at all")
+         assert result is None
+ 
+ 
+ class TestPRDValidation:
++    """Test PRDValidation."""
+     def test_find_issues_too_few_epics(self, client):
++        """Test find issues too few epics.
++
++        Args:
++            client: Description.
++        """
+         prd = {"epics": [{"name": "Only One", "user_stories": []}]}
+         issues = client._find_prd_issues(prd)
+         assert "too_few_epics" in issues
+ 
+     def test_find_issues_vague_features(self, client):
++        """Test find issues vague features.
++
++        Args:
++            client: Description.
++        """
+         prd = {
+             "epics": [{
+                 "name": "Epic 1", "priority": "P0",
+@@ -152,6 +251,11 @@ class TestPRDValidation:
+         assert "vague_feature_descriptions" in issues
+ 
+     def test_find_issues_missing_data_model(self, client):
++        """Test find issues missing data model.
++
++        Args:
++            client: Description.
++        """
+         prd = {
+             "epics": [
+                 {"name": "E1", "user_stories": []},
+@@ -166,6 +270,12 @@ class TestPRDValidation:
+ 
+     def test_structural_fixes_add_depends_on(self, client, sample_prd):
+         # Remove depends_on to test fix
++        """Test structural fixes add depends on.
++
++        Args:
++            client: Description.
++            sample_prd: Description.
++        """
+         for epic in sample_prd["epics"]:
+             if "depends_on" in epic:
+                 del epic["depends_on"]
+@@ -175,6 +285,11 @@ class TestPRDValidation:
+         assert len(fixed["epics"][1].get("depends_on", [])) > 0
+ 
+     def test_structural_fixes_add_error_handling(self, client):
++        """Test structural fixes add error handling.
++
++        Args:
++            client: Description.
++        """
+         prd = {
+             "epics": [{"name": "E1", "user_stories": []}],
+             "non_functional_requirements": {"performance": ["fast"]}
+@@ -184,15 +299,37 @@ class TestPRDValidation:
+ 
+ 
+ class TestMarkdownGeneration:
++    """Test Markdown Generation."""
+     def test_markdown_includes_title(self, client, sample_prd, sample_enhanced_idea):
++        """Test markdown includes title.
++
++        Args:
++            client: Description.
++            sample_prd: Description.
++            sample_enhanced_idea: Description.
++        """
+         md = client._prd_to_markdown(sample_prd, sample_enhanced_idea)
+         assert "TeamFlow" in md
+ 
+     def test_markdown_includes_epics(self, client, sample_prd, sample_enhanced_idea):
++        """Test markdown includes epics.
++
++        Args:
++            client: Description.
++            sample_prd: Description.
++            sample_enhanced_idea: Description.
++        """
+         md = client._prd_to_markdown(sample_prd, sample_enhanced_idea)
+         assert "Project Setup & Infrastructure" in md
+         assert "Authentication" in md
+ 
+     def test_markdown_includes_dependencies(self, client, sample_prd, sample_enhanced_idea):
++        """Test markdown includes dependencies.
++
++        Args:
++            client: Description.
++            sample_prd: Description.
++            sample_enhanced_idea: Description.
++        """
+         md = client._prd_to_markdown(sample_prd, sample_enhanced_idea)
+         assert "Depends on:" in md
+diff --git a/tests/test_gemini_module.py b/tests/test_gemini_module.py
+index 4bef3a9..19ddbd2 100644
+--- a/tests/test_gemini_module.py
++++ b/tests/test_gemini_module.py
+@@ -1,3 +1,4 @@
++"""Test gemini module module."""
+ import sys
+ import os
+ from pathlib import Path
+@@ -8,6 +9,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
+ from modules.gemini_client import GeminiClient
+ 
+ def test_module():
++    """Test module."""
+     print("Testing GeminiClient module directly...")
+     client = GeminiClient(api_key="dummy")
+     print(f"Configured: {client.configured}")
+diff --git a/tests/test_orchestrator.py b/tests/test_orchestrator.py
+index 641dd9a..006a847 100644
+--- a/tests/test_orchestrator.py
++++ b/tests/test_orchestrator.py
+@@ -17,67 +17,91 @@ from core.orchestrator import (
+ 
+ 
+ class TestInputValidation:
++    """Test Input Validation."""
+     def test_validate_app_idea_empty(self):
++        """Test validate app idea empty."""
+         with pytest.raises(InputValidationError, match="cannot be empty"):
+             validate_app_idea("")
+ 
+     def test_validate_app_idea_none(self):
++        """Test validate app idea none."""
+         with pytest.raises(InputValidationError, match="cannot be empty"):
+             validate_app_idea(None)
+ 
+     def test_validate_app_idea_too_short(self):
++        """Test validate app idea too short."""
+         with pytest.raises(InputValidationError, match="too short"):
+             validate_app_idea("short")
+ 
+     def test_validate_app_idea_too_long(self):
++        """Test validate app idea too long."""
+         with pytest.raises(InputValidationError, match="too long"):
+             validate_app_idea("x" * 5001)
+ 
+     def test_validate_app_idea_valid(self):
++        """Test validate app idea valid."""
+         result = validate_app_idea("  A project management tool for remote teams with Kanban boards  ")
+         assert result == "A project management tool for remote teams with Kanban boards"
+ 
+     def test_validate_enhanced_idea_missing_title(self):
++        """Test validate enhanced idea missing title."""
+         with pytest.raises(InputValidationError, match="title"):
+             validate_enhanced_idea({"description": "desc"})
+ 
+     def test_validate_enhanced_idea_valid(self, sample_enhanced_idea):
++        """Test validate enhanced idea valid.
++
++        Args:
++            sample_enhanced_idea: Description.
++        """
+         result = validate_enhanced_idea(sample_enhanced_idea)
+         assert result["title"] == "TeamFlow"
+ 
+     def test_validate_prd_no_epics(self):
++        """Test validate prd no epics."""
+         with pytest.raises(InputValidationError, match="no epics"):
+             validate_prd({"epics": []})
+ 
+     def test_validate_prd_missing_epic_name(self):
++        """Test validate prd missing epic name."""
+         with pytest.raises(InputValidationError, match="missing a name"):
+             validate_prd({"epics": [{"user_stories": []}]})
+ 
+     def test_validate_prd_valid(self, sample_prd):
++        """Test validate prd valid.
++
++        Args:
++            sample_prd: Description.
++        """
+         result = validate_prd(sample_prd)
+         assert len(result["epics"]) == 3
+ 
+ 
+ class TestRetryWithBackoff:
++    """Test Retry With Backoff."""
+     def test_succeeds_first_try(self):
++        """Test succeeds first try."""
+         fn = MagicMock(return_value="ok")
+         result = retry_with_backoff(fn, max_retries=3)
+         assert result == "ok"
+         fn.assert_called_once()
+ 
+     def test_succeeds_after_retries(self):
++        """Test succeeds after retries."""
+         fn = MagicMock(side_effect=[Exception("fail"), Exception("fail"), "ok"])
+         result = retry_with_backoff(fn, max_retries=3, base_delay=0.01)
+         assert result == "ok"
+         assert fn.call_count == 3
+ 
+     def test_exhausts_retries(self):
++        """Test exhausts retries."""
+         fn = MagicMock(side_effect=Exception("always fails"))
+         with pytest.raises(Exception, match="always fails"):
+             retry_with_backoff(fn, max_retries=2, base_delay=0.01)
+         assert fn.call_count == 2
+ 
+     def test_calls_on_retry_callback(self):
++        """Test calls on retry callback."""
+         fn = MagicMock(side_effect=[Exception("fail"), "ok"])
+         callback = MagicMock()
+         retry_with_backoff(fn, max_retries=2, base_delay=0.01, on_retry=callback)
+@@ -87,12 +111,23 @@ class TestRetryWithBackoff:
+ 
+ 
+ class TestFeatureExtraction:
++    """Test Feature Extraction."""
+     def test_extract_features_basic(self, sample_prd):
++        """Test extract features basic.
++
++        Args:
++            sample_prd: Description.
++        """
+         orch = Orchestrator.__new__(Orchestrator)
+         features = orch._extract_features(sample_prd)
+         assert len(features) == 4  # 1 + 2 + 1 features across 3 epics
+ 
+     def test_extract_features_includes_metadata(self, sample_prd):
++        """Test extract features includes metadata.
++
++        Args:
++            sample_prd: Description.
++        """
+         orch = Orchestrator.__new__(Orchestrator)
+         features = orch._extract_features(sample_prd)
+         first = features[0]
+@@ -105,6 +140,11 @@ class TestFeatureExtraction:
+         assert "acceptance_criteria" in first
+ 
+     def test_features_ordered_by_dependency(self, sample_prd):
++        """Test features ordered by dependency.
++
++        Args:
++            sample_prd: Description.
++        """
+         orch = Orchestrator.__new__(Orchestrator)
+         features = orch._extract_features(sample_prd)
+         # P0 epics with no deps should come first
+@@ -115,6 +155,7 @@ class TestFeatureExtraction:
+         assert min(auth_indices) > max(setup_indices)
+ 
+     def test_features_without_dependencies_use_priority(self):
++        """Test features without dependencies use priority."""
+         prd = {
+             "epics": [
+                 {"name": "Low Priority", "priority": "P2", "user_stories": [
+@@ -133,7 +174,9 @@ class TestFeatureExtraction:
+ 
+ 
+ class TestTopologicalSort:
++    """Test Topological Sort."""
+     def test_simple_dependency_chain(self):
++        """Test simple dependency chain."""
+         orch = Orchestrator.__new__(Orchestrator)
+         features = [
+             {"epic": "C", "epic_priority": "P2", "complexity": "S"},
+@@ -148,6 +191,7 @@ class TestTopologicalSort:
+         assert result[2]["epic"] == "C"
+ 
+     def test_cycle_returns_none(self):
++        """Test cycle returns none."""
+         orch = Orchestrator.__new__(Orchestrator)
+         features = [
+             {"epic": "A", "epic_priority": "P0", "complexity": "S"},
+@@ -158,6 +202,7 @@ class TestTopologicalSort:
+         assert result is None
+ 
+     def test_no_deps_returns_none(self):
++        """Test no deps returns none."""
+         orch = Orchestrator.__new__(Orchestrator)
+         features = [{"epic": "A", "epic_priority": "P0", "complexity": "S"}]
+         epic_deps = {"A": []}
+@@ -166,10 +211,13 @@ class TestTopologicalSort:
+ 
+ 
+ class TestRunStatus:
++    """Test Run Status."""
+     def test_pipeline_order_defined(self):
++        """Test pipeline order defined."""
+         assert RunStatus.PIPELINE_ORDER[0] == RunStatus.ENHANCING_IDEA
+         assert RunStatus.PIPELINE_ORDER[-1] == RunStatus.COMPLETED
+ 
+     def test_transitions_defined(self):
++        """Test transitions defined."""
+         assert RunStatus.COMPLETED in RunStatus.TRANSITIONS
+         assert RunStatus.TRANSITIONS[RunStatus.COMPLETED] == []

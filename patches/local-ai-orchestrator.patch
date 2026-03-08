@@ -1,0 +1,668 @@
+diff --git a/orchestrator_client/client.py b/orchestrator_client/client.py
+index 39657bf..10c52a3 100644
+--- a/orchestrator_client/client.py
++++ b/orchestrator_client/client.py
+@@ -72,9 +72,11 @@ class OrchestratorClient:
+         )
+     
+     def __enter__(self) -> OrchestratorClient:
++        """Enter."""
+         return self
+     
+     def __exit__(self, *args) -> None:
++        """Exit."""
+         self.close()
+     
+     def close(self) -> None:
+@@ -278,6 +280,13 @@ class AsyncOrchestratorClient:
+         api_key: Optional[str] = None,
+         timeout: float = 60.0,
+     ):
++        """Init.
++
++        Args:
++            base_url: Description.
++            api_key: Description.
++            timeout: Description.
++        """
+         self.base_url = base_url.rstrip("/")
+         self.api_key = api_key or os.getenv("ORCHESTRATOR_API_KEY")
+         
+@@ -292,15 +301,19 @@ class AsyncOrchestratorClient:
+         )
+     
+     async def __aenter__(self) -> AsyncOrchestratorClient:
++        """Aenter."""
+         return self
+     
+     async def __aexit__(self, *args) -> None:
++        """Aexit."""
+         await self.close()
+     
+     async def close(self) -> None:
++        """Close."""
+         await self._client.aclose()
+     
+     async def health(self) -> dict:
++        """Health."""
+         response = await self._client.get("/health")
+         response.raise_for_status()
+         return response.json()
+@@ -310,6 +323,12 @@ class AsyncOrchestratorClient:
+         profile: str = "balanced",
+         limit: int = 10,
+     ) -> list[ModelRanking]:
++        """Get rankings.
++
++        Args:
++            profile: Description.
++            limit: Description.
++        """
+         response = await self._client.get(
+             "/v1/models/rankings",
+             params={"profile": profile, "limit": limit},
+@@ -324,6 +343,13 @@ class AsyncOrchestratorClient:
+         model: str = "auto",
+         profile: str = "balanced",
+     ) -> ChatCompletion:
++        """Chat.
++
++        Args:
++            message: Description.
++            model: Description.
++            profile: Description.
++        """
+         payload = {
+             "messages": [{"role": "user", "content": message}],
+             "model": model,
+diff --git a/orchestrator_client/models.py b/orchestrator_client/models.py
+index eca3176..bd4e324 100644
+--- a/orchestrator_client/models.py
++++ b/orchestrator_client/models.py
+@@ -19,6 +19,11 @@ class ModelRanking:
+     
+     @classmethod
+     def from_dict(cls, data: dict) -> "ModelRanking":
++        """From dict.
++
++        Args:
++            data: Description.
++        """
+         return cls(
+             model_id=data.get("model_id", 0),
+             model_name=data.get("model_name", ""),
+@@ -40,6 +45,11 @@ class RoutingResult:
+     
+     @classmethod
+     def from_dict(cls, data: dict) -> "RoutingResult":
++        """From dict.
++
++        Args:
++            data: Description.
++        """
+         return cls(
+             selected_model=data.get("selected_model", {}).get("model_name", ""),
+             fallback_models=[m.get("model_name", "") for m in data.get("fallback_models", [])],
+@@ -62,6 +72,12 @@ class RoutingProfile:
+     
+     @classmethod
+     def from_dict(cls, name: str, data: dict) -> "RoutingProfile":
++        """From dict.
++
++        Args:
++            name: Description.
++            data: Description.
++        """
+         return cls(
+             name=name,
+             quality_weight=data.get("quality_weight", 0.0),
+@@ -86,6 +102,11 @@ class AnalyticsSummary:
+     
+     @classmethod
+     def from_dict(cls, data: dict) -> "AnalyticsSummary":
++        """From dict.
++
++        Args:
++            data: Description.
++        """
+         return cls(
+             total_requests=data.get("total_requests", 0),
+             total_tokens=data.get("total_tokens", 0),
+@@ -104,6 +125,7 @@ class ChatMessage:
+     content: str
+     
+     def to_dict(self) -> dict:
++        """To dict."""
+         return {"role": self.role, "content": self.content}
+ 
+ 
+@@ -119,6 +141,11 @@ class ChatCompletion:
+     
+     @classmethod
+     def from_dict(cls, data: dict) -> "ChatCompletion":
++        """From dict.
++
++        Args:
++            data: Description.
++        """
+         choices = data.get("choices", [{}])
+         message = choices[0].get("message", {}) if choices else {}
+         return cls(
+diff --git a/src/orchestrator/adapters/base.py b/src/orchestrator/adapters/base.py
+index 95d2fa9..c77711f 100644
+--- a/src/orchestrator/adapters/base.py
++++ b/src/orchestrator/adapters/base.py
+@@ -34,6 +34,7 @@ class RawMetric:
+     """Additional metadata from the source."""
+ 
+     def __repr__(self) -> str:
++        """Repr."""
+         return f"RawMetric({self.model_name}, {self.metric_type}={self.value})"
+ 
+ 
+diff --git a/src/orchestrator/adapters/huggingface.py b/src/orchestrator/adapters/huggingface.py
+index 2a576db..6e3b071 100644
+--- a/src/orchestrator/adapters/huggingface.py
++++ b/src/orchestrator/adapters/huggingface.py
+@@ -51,10 +51,12 @@ class HuggingFaceAdapter(BenchmarkSource):
+ 
+     @property
+     def source_name(self) -> str:
++        """Source name."""
+         return "huggingface"
+ 
+     @property
+     def sync_interval_minutes(self) -> int:
++        """Sync interval minutes."""
+         return 1440  # 24 hours
+ 
+     async def fetch_data(self) -> dict[str, Any]:
+diff --git a/src/orchestrator/adapters/lmsys.py b/src/orchestrator/adapters/lmsys.py
+index 2bf1cef..4481a28 100644
+--- a/src/orchestrator/adapters/lmsys.py
++++ b/src/orchestrator/adapters/lmsys.py
+@@ -43,10 +43,12 @@ class LMSYSAdapter(BenchmarkSource):
+ 
+     @property
+     def source_name(self) -> str:
++        """Source name."""
+         return "lmsys"
+ 
+     @property
+     def sync_interval_minutes(self) -> int:
++        """Sync interval minutes."""
+         return 360  # 6 hours
+ 
+     async def fetch_data(self) -> dict[str, Any]:
+diff --git a/src/orchestrator/adapters/ollama.py b/src/orchestrator/adapters/ollama.py
+index f1dad4e..f6fda73 100644
+--- a/src/orchestrator/adapters/ollama.py
++++ b/src/orchestrator/adapters/ollama.py
+@@ -83,10 +83,12 @@ class OllamaAdapter(BenchmarkSource):
+         
+     @property
+     def source_name(self) -> str:
++        """Source name."""
+         return "ollama"
+     
+     @property
+     def sync_interval_minutes(self) -> int:
++        """Sync interval minutes."""
+         return 5  # Check for new local models every 5 minutes
+     
+     @property
+diff --git a/src/orchestrator/adapters/openrouter.py b/src/orchestrator/adapters/openrouter.py
+index adca25b..0589d54 100644
+--- a/src/orchestrator/adapters/openrouter.py
++++ b/src/orchestrator/adapters/openrouter.py
+@@ -45,6 +45,7 @@ class OpenRouterModel(BaseModel):
+ 
+     # Latency data might be nested
+     class Config:
++        """Config."""
+         extra = "allow"
+ 
+ 
+@@ -80,10 +81,12 @@ class OpenRouterAdapter(BenchmarkSource):
+ 
+     @property
+     def source_name(self) -> str:
++        """Source name."""
+         return "openrouter"
+ 
+     @property
+     def sync_interval_minutes(self) -> int:
++        """Sync interval minutes."""
+         return 5  # Sync every 5 minutes
+ 
+     async def fetch_data(self) -> dict[str, Any]:
+diff --git a/src/orchestrator/analytics/budget.py b/src/orchestrator/analytics/budget.py
+index b520723..791a6a3 100644
+--- a/src/orchestrator/analytics/budget.py
++++ b/src/orchestrator/analytics/budget.py
+@@ -49,10 +49,16 @@ class BudgetConfig:
+     hard_limit: bool = False  # If True, block requests when exceeded
+     
+     def to_dict(self) -> dict:
++        """To dict."""
+         return asdict(self)
+     
+     @classmethod
+     def from_dict(cls, data: dict) -> "BudgetConfig":
++        """From dict.
++
++        Args:
++            data: Description.
++        """
+         return cls(
+             daily_limit=data.get("daily_limit", 10.0),
+             weekly_limit=data.get("weekly_limit", 50.0),
+@@ -79,6 +85,7 @@ class SpendSummary:
+     status_message: str = ""
+     
+     def to_dict(self) -> dict:
++        """To dict."""
+         return {
+             **asdict(self),
+             "status": self.status.value,
+diff --git a/src/orchestrator/analytics/collector.py b/src/orchestrator/analytics/collector.py
+index 7807a5b..1c35f27 100644
+--- a/src/orchestrator/analytics/collector.py
++++ b/src/orchestrator/analytics/collector.py
+@@ -34,6 +34,7 @@ class RoutingEvent:
+     error_message: Optional[str] = None
+     
+     def to_dict(self) -> dict:
++        """To dict."""
+         return {
+             "timestamp": self.timestamp.isoformat(),
+             "model_selected": self.model_selected,
+@@ -148,6 +149,7 @@ class AnalyticsCollector:
+         return self.storage.get_model_breakdown(period_hours)
+     
+     def _empty_summary(self) -> dict:
++        """Empty summary."""
+         return {
+             "total_requests": 0,
+             "total_tokens": 0,
+diff --git a/src/orchestrator/analytics/storage.py b/src/orchestrator/analytics/storage.py
+index 66df60e..2e4da0f 100644
+--- a/src/orchestrator/analytics/storage.py
++++ b/src/orchestrator/analytics/storage.py
+@@ -26,6 +26,11 @@ class AnalyticsStorage:
+     """
+     
+     def __init__(self, db_path: str = "analytics.db"):
++        """Init.
++
++        Args:
++            db_path: Description.
++        """
+         self.db_path = Path(db_path)
+         self._init_db()
+     
+diff --git a/src/orchestrator/api/app.py b/src/orchestrator/api/app.py
+index db4b02c..413a3f3 100644
+--- a/src/orchestrator/api/app.py
++++ b/src/orchestrator/api/app.py
+@@ -56,6 +56,12 @@ def create_app() -> FastAPI:
+     # Request timing middleware
+     @app.middleware("http")
+     async def add_timing_header(request: Request, call_next):
++        """Add timing header.
++
++        Args:
++            request: Description.
++            call_next: Description.
++        """
+         start_time = time.perf_counter()
+         response = await call_next(request)
+         process_time = (time.perf_counter() - start_time) * 1000
+@@ -68,11 +74,13 @@ def create_app() -> FastAPI:
+     # Health check
+     @app.get("/health")
+     async def health_check():
++        """Health check."""
+         return {"status": "healthy", "version": "0.1.0"}
+ 
+     # Root redirect
+     @app.get("/")
+     async def root():
++        """Root."""
+         return {
+             "name": "Local AI Orchestrator",
+             "version": "0.1.0",
+diff --git a/src/orchestrator/api/model_service.py b/src/orchestrator/api/model_service.py
+index 2d3dcc9..2779d0a 100644
+--- a/src/orchestrator/api/model_service.py
++++ b/src/orchestrator/api/model_service.py
+@@ -36,6 +36,11 @@ class ModelDataService:
+     """
+     
+     def __init__(self, cache_ttl_minutes: int = 5):
++        """Init.
++
++        Args:
++            cache_ttl_minutes: Description.
++        """
+         self._cache = ModelDataCache(ttl_minutes=cache_ttl_minutes)
+         self._adapter = OpenRouterAdapter()
+         self._next_custom_id = 10000  # Start custom IDs high to avoid conflicts
+diff --git a/src/orchestrator/cache/memory.py b/src/orchestrator/cache/memory.py
+index 772b6a3..e71140e 100644
+--- a/src/orchestrator/cache/memory.py
++++ b/src/orchestrator/cache/memory.py
+@@ -50,10 +50,12 @@ class InMemoryCache(CacheBackend):
+ 
+     @property
+     def name(self) -> str:
++        """Name."""
+         return "memory"
+ 
+     @property
+     def is_connected(self) -> bool:
++        """Is connected."""
+         return self._connected
+ 
+     async def get(self, key: str) -> Any | None:
+@@ -219,6 +221,7 @@ class InMemoryCache(CacheBackend):
+             return
+ 
+         async def cleanup_loop():
++            """Cleanup loop."""
+             while self._connected:
+                 try:
+                     await asyncio.sleep(self._cleanup_interval)
+diff --git a/src/orchestrator/cache/redis.py b/src/orchestrator/cache/redis.py
+index 6e06a7e..b530739 100644
+--- a/src/orchestrator/cache/redis.py
++++ b/src/orchestrator/cache/redis.py
+@@ -59,10 +59,12 @@ class RedisCache(CacheBackend):
+ 
+     @property
+     def name(self) -> str:
++        """Name."""
+         return "redis"
+ 
+     @property
+     def is_connected(self) -> bool:
++        """Is connected."""
+         return self._connected
+ 
+     def _get_key(self, key: str) -> str:
+diff --git a/src/orchestrator/db/manager.py b/src/orchestrator/db/manager.py
+index fcd55b2..618c959 100644
+--- a/src/orchestrator/db/manager.py
++++ b/src/orchestrator/db/manager.py
+@@ -64,6 +64,12 @@ class DatabaseManager:
+ 
+         @event.listens_for(engine, "connect")
+         def set_sqlite_pragma(dbapi_connection, connection_record) -> None:  # type: ignore
++            """Set sqlite pragma.
++
++            Args:
++                dbapi_connection: Description.
++                connection_record: Description.
++            """
+             cursor = dbapi_connection.cursor()
+             # Enable WAL mode for better concurrency
+             cursor.execute("PRAGMA journal_mode=WAL")
+diff --git a/src/orchestrator/http/client.py b/src/orchestrator/http/client.py
+index 962e84f..eeb5f99 100644
+--- a/src/orchestrator/http/client.py
++++ b/src/orchestrator/http/client.py
+@@ -14,6 +14,11 @@ class RateLimitError(Exception):
+     """Raised when API rate limit is hit."""
+ 
+     def __init__(self, retry_after: float | None = None) -> None:
++        """Init.
++
++        Args:
++            retry_after: Description.
++        """
+         self.retry_after = retry_after
+         super().__init__(f"Rate limited. Retry after: {retry_after}s")
+ 
+@@ -308,7 +313,15 @@ class SyncHttpClient:
+             self._client = None
+ 
+     def __enter__(self) -> "SyncHttpClient":
++        """Enter."""
+         return self
+ 
+     def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
++        """Exit.
++
++        Args:
++            exc_type: Description.
++            exc_val: Description.
++            exc_tb: Description.
++        """
+         self.close()
+diff --git a/src/orchestrator/main.py b/src/orchestrator/main.py
+index 8d6be35..2e37514 100644
+--- a/src/orchestrator/main.py
++++ b/src/orchestrator/main.py
+@@ -140,6 +140,12 @@ def main() -> NoReturn:
+ 
+     # Handle graceful shutdown
+     def signal_handler(signum: int, frame: object) -> None:
++        """Signal handler.
++
++        Args:
++            signum: Description.
++            frame: Description.
++        """
+         logger.info(f"Received signal {signum}")
+         orchestrator.stop()
+         sys.exit(0)
+diff --git a/src/orchestrator/resolution/matcher.py b/src/orchestrator/resolution/matcher.py
+index 051bea1..d774811 100644
+--- a/src/orchestrator/resolution/matcher.py
++++ b/src/orchestrator/resolution/matcher.py
+@@ -17,6 +17,7 @@ class MatchResult:
+     """Raw Levenshtein edit distance."""
+ 
+     def __repr__(self) -> str:
++        """Repr."""
+         return f"MatchResult({self.candidate!r}, score={self.score:.3f})"
+ 
+ 
+diff --git a/src/orchestrator/resolution/resolver.py b/src/orchestrator/resolution/resolver.py
+index 21495a8..7128f1e 100644
+--- a/src/orchestrator/resolution/resolver.py
++++ b/src/orchestrator/resolution/resolver.py
+@@ -42,6 +42,7 @@ class ResolvedEntity:
+     """Whether this match needs human review."""
+ 
+     def __repr__(self) -> str:
++        """Repr."""
+         return (
+             f"ResolvedEntity({self.source_name!r} -> "
+             f"{self.canonical_name!r}, {self.confidence.value})"
+diff --git a/src/orchestrator/routing/complexity.py b/src/orchestrator/routing/complexity.py
+index 6d9dd9d..ce41aab 100644
+--- a/src/orchestrator/routing/complexity.py
++++ b/src/orchestrator/routing/complexity.py
+@@ -44,6 +44,7 @@ class ComplexityResult:
+ 
+     @property
+     def level_name(self) -> str:
++        """Level name."""
+         return self.level.name.lower()
+ 
+ 
+diff --git a/src/orchestrator/routing/normalizers.py b/src/orchestrator/routing/normalizers.py
+index 62931f6..06ef223 100644
+--- a/src/orchestrator/routing/normalizers.py
++++ b/src/orchestrator/routing/normalizers.py
+@@ -113,10 +113,12 @@ class QualityNormalizer(MetricNormalizer):
+ 
+     @property
+     def metric_type(self) -> str:
++        """Metric type."""
+         return self._metric_name
+ 
+     @property
+     def higher_is_better(self) -> bool:
++        """Higher is better."""
+         return True
+ 
+     def normalize(self, value: float, context: dict[str, Any] | None = None) -> NormalizedValue:
+@@ -180,10 +182,12 @@ class LatencyNormalizer(MetricNormalizer):
+ 
+     @property
+     def metric_type(self) -> str:
++        """Metric type."""
+         return self._metric_name
+ 
+     @property
+     def higher_is_better(self) -> bool:
++        """Higher is better."""
+         return False  # Lower latency is better
+ 
+     def normalize(self, value: float, context: dict[str, Any] | None = None) -> NormalizedValue:
+@@ -254,10 +258,12 @@ class CostNormalizer(MetricNormalizer):
+ 
+     @property
+     def metric_type(self) -> str:
++        """Metric type."""
+         return self._metric_name
+ 
+     @property
+     def higher_is_better(self) -> bool:
++        """Higher is better."""
+         return False  # Lower cost is better
+ 
+     def normalize(self, value: float, context: dict[str, Any] | None = None) -> NormalizedValue:
+@@ -317,10 +323,12 @@ class ContextLengthNormalizer(MetricNormalizer):
+ 
+     @property
+     def metric_type(self) -> str:
++        """Metric type."""
+         return "context_length"
+ 
+     @property
+     def higher_is_better(self) -> bool:
++        """Higher is better."""
+         return True
+ 
+     def normalize(self, value: float, context: dict[str, Any] | None = None) -> NormalizedValue:
+diff --git a/tests/test_cache.py b/tests/test_cache.py
+index 837ff48..1c90f64 100644
+--- a/tests/test_cache.py
++++ b/tests/test_cache.py
+@@ -236,6 +236,7 @@ class TestInMemoryCache:
+         call_count = 0
+ 
+         def factory():
++            """Factory."""
+             nonlocal call_count
+             call_count += 1
+             return f"computed_{call_count}"
+diff --git a/tests/test_performance.py b/tests/test_performance.py
+index 1ca641a..b24c0fa 100644
+--- a/tests/test_performance.py
++++ b/tests/test_performance.py
+@@ -43,16 +43,19 @@ def large_model_set() -> list[ModelMetrics]:
+ 
+ @pytest.fixture
+ def scorer() -> CompositeScorer:
++    """Scorer."""
+     return CompositeScorer()
+ 
+ 
+ @pytest.fixture
+ def router() -> Router:
++    """Router."""
+     return Router()
+ 
+ 
+ @pytest.fixture
+ def classifier() -> ComplexityClassifier:
++    """Classifier."""
+     return ComplexityClassifier()
+ 
+ 
+diff --git a/tests/test_resilience.py b/tests/test_resilience.py
+index 3b19e3b..e4e756c 100644
+--- a/tests/test_resilience.py
++++ b/tests/test_resilience.py
+@@ -67,6 +67,11 @@ class TestOfflineCache:
+ 
+     @pytest.fixture
+     def cache(self, temp_cache_dir: Path) -> OfflineCache:
++        """Cache.
++
++        Args:
++            temp_cache_dir: Description.
++        """
+         return OfflineCache(cache_dir=temp_cache_dir)
+ 
+     def test_store_and_retrieve(self, cache: OfflineCache) -> None:
+diff --git a/tests/test_routing.py b/tests/test_routing.py
+index d0f1fe7..6643b94 100644
+--- a/tests/test_routing.py
++++ b/tests/test_routing.py
+@@ -177,10 +177,12 @@ class TestCompositeScorer:
+ 
+     @pytest.fixture
+     def scorer(self) -> CompositeScorer:
++        """Scorer."""
+         return CompositeScorer()
+ 
+     @pytest.fixture
+     def sample_models(self) -> list[ModelMetrics]:
++        """Sample models."""
+         return [
+             ModelMetrics(
+                 model_id=1,
+@@ -281,10 +283,12 @@ class TestRouter:
+ 
+     @pytest.fixture
+     def router(self) -> Router:
++        """Router."""
+         return Router()
+ 
+     @pytest.fixture
+     def sample_models(self) -> list[ModelMetrics]:
++        """Sample models."""
+         return [
+             ModelMetrics(model_id=1, model_name="model-a", elo_rating=1200, latency_p90=500, cost_blended=5.0),
+             ModelMetrics(model_id=2, model_name="model-b", elo_rating=1100, latency_p90=300, cost_blended=2.0),
+diff --git a/tests/test_security.py b/tests/test_security.py
+index 38a9942..fca1363 100644
+--- a/tests/test_security.py
++++ b/tests/test_security.py
+@@ -16,6 +16,7 @@ class TestUrlValidator:
+ 
+     @pytest.fixture
+     def validator(self) -> UrlValidator:
++        """Validator."""
+         return UrlValidator()
+ 
+     def test_valid_external_url(self, validator: UrlValidator) -> None:
+@@ -106,16 +107,23 @@ class TestApiKeyMiddleware:
+         
+         @app.get("/health")
+         def health():
++            """Health."""
+             return {"status": "ok"}
+         
+         @app.get("/protected")
+         def protected():
++            """Protected."""
+             return {"data": "secret"}
+         
+         return app
+ 
+     @pytest.fixture
+     def client(self, app_with_auth: FastAPI) -> TestClient:
++        """Client.
++
++        Args:
++            app_with_auth: Description.
++        """
+         return TestClient(app_with_auth)
+ 
+     def test_health_bypasses_auth(self, client: TestClient) -> None:
